@@ -5,7 +5,7 @@
 [![CI](https://github.com/ChangeDayAndNight/UR5e_SIM2REAL-public/actions/workflows/ci.yml/badge.svg)](https://github.com/ChangeDayAndNight/UR5e_SIM2REAL-public/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-**[프로젝트 개요 페이지](https://changedayandnight.github.io/UR5e_SIM2REAL-public/)** · [실기 배포 가이드](DEPLOY_GUIDE.md) · [프로젝트 원장 — 설계 계약과 실패 기록 F01–F99](PROJECT_LOG.md)
+**[프로젝트 개요 페이지](https://changedayandnight.github.io/UR5e_SIM2REAL-public/)** · [실기 배포 가이드](DEPLOY_GUIDE.md) · [프로젝트 원장 — 설계 계약과 실패 기록 F01–F100](PROJECT_LOG.md)
 
 <p align="center">
   <img src="docs/media/demo.gif" alt="Teacher(왼쪽)와 Vision Student(오른쪽)가 5 cm 큐브를 집어 목표 위치에 놓는 Isaac Sim 롤아웃" width="100%">
@@ -27,7 +27,19 @@
 | Teacher | 34D 상태 + depth 인식 추정치 | **100.00%** (2,048 / 2,048) | 99.81% | [`exported_experimental/teacher_177c7eefed0f`](exported_experimental/teacher_177c7eefed0f/DEPLOY_README.md) |
 | Vision Student | RGB-D 영상 50,206D | **94.53%** (1,936 / 2,048) | 93.46% | [`exported_experimental/student_8b415b9b0831`](exported_experimental/student_8b415b9b0831/DEPLOY_README.md) |
 
-평가 조건은 seed 42–45 × 512 에피소드, 보조 동작 없음, 인식 오차 domain randomization과 실기 속도 상한을 적용한 상태입니다. **실기 성공률은 아직 측정하지 않았고**, 두 번들은 사람이 e-stop 앞에서 운용하는 랩 실험 레인(`adopted: false`)입니다.
+평가 조건은 seed 42–45 × 512 에피소드, 보조 동작 없음, 인식 오차 domain randomization과 실기 속도 상한을 적용한 상태입니다. 두 번들은 사람이 e-stop 앞에서 운용하는 랩 실험 레인(`adopted: false`)이며, **실기에서는 아직 파지에 성공하지 못했습니다**(아래 실기 배포).
+
+## 실기 배포 — Vision Student 10회 평가
+
+<p align="center">
+  <img src="docs/media/real_deploy.gif" alt="실제 UR5e가 Vision Student 정책으로 빨간 큐브에 접근해 하강하는 실기 배포 장면(2배속)" width="100%">
+  <br><sub>실제 UR5e · OnRobot 2FG7 · RealSense D435i에서 Vision Student 정책을 실행한 장면 (2배속). 원본 속도 영상은 <a href="https://changedayandnight.github.io/UR5e_SIM2REAL-public/#real">개요 페이지</a>에 있습니다.</sub>
+</p>
+
+sim에서 학습한 Vision Student를 실제 로봇에 배포해 10회 실행했습니다. 정책은 카메라 영상만으로 큐브에 접근·하강했지만, **파지는 10회 모두 실패(0 / 10)** 했습니다. 정책 내부의 held latch는 파지로 판정했으나 실제로는 집지 못한 false grasp였습니다.
+
+- **예상 원인:** 핑거 폭·파지력 피드백 없음, 근접 시 카메라 FOV 이탈과 depth 결측, 그리퍼 지연, TCP 오프셋
+- **다음 단계:** 핑거 폭·TCP 높이·깊이 영상을 단계별로 기록해 원인을 분리한 뒤 재실험합니다. 원인이 해소되기 전까지 실기 자동 작업 배포는 보류합니다. 기록은 [PROJECT_LOG.md](PROJECT_LOG.md) F100에 있습니다.
 
 ## 핵심 설계
 
@@ -35,7 +47,7 @@
 - **sim·실기 단일 소스** — 관측 전처리(`common/obs_preprocess.py`)와 행동 매핑을 sim과 실기가 같은 코드로 씁니다. `obs_spec.json`이 관측 순서·크기·설정 해시를 봉인합니다.
 - **봉인된 평가와 채택** — 후보는 학습 중 성공률의 trailing median으로 고르고, 4 seed × 512 에피소드 평가와 Wilson 하한 게이트를 통과해야 다음 단계로 넘어갑니다. 권한은 `adoption.json`과 체크포인트 SHA-256에만 있습니다.
 - **fail-closed 배포** — 해시·설정·캘리브레이션·증거가 어긋나면 기동하지 않습니다. 모션은 명시적 인가 플래그로만 허용합니다.
-- **실패 원장** — F01–F99의 실패·결정 기록(문제 → 기전 → 조치 → 교훈)을 [PROJECT_LOG.md](PROJECT_LOG.md)에 남겼습니다. 예: 한쪽 손가락으로 집어도 sim 성공률 99.6%가 나온 그리퍼 변환 결함(F91), DLSS 경로에서 RGB 렌더만 죽은 결함(F94).
+- **실패 원장** — F01–F100의 실패·결정 기록(문제 → 기전 → 조치 → 교훈)을 [PROJECT_LOG.md](PROJECT_LOG.md)에 남겼습니다. 예: 한쪽 손가락으로 집어도 sim 성공률 99.6%가 나온 그리퍼 변환 결함(F91), DLSS 경로에서 RGB 렌더만 죽은 결함(F94).
 
 ## 요구 사항
 
@@ -135,8 +147,8 @@ docs/                    프로젝트 개요 페이지 (GitHub Pages)
 
 ## 한계
 
-- 실기 성공률은 아직 측정하지 않았습니다. sim 수치는 실기 인식 오차가 학습 범위(편향 1 cm 이하, 검출률 60% 이상) 안일 때의 상한에 가깝습니다.
-- 2FG7은 DO 펄스로 개폐해 실제 폭·파지 feedback이 없습니다.
+- 실기 10회 평가에서 파지 0 / 10 — sim 성능(94.53%)이 아직 실기로 옮겨지지 않았고, 원인을 분석 중입니다.
+- 2FG7은 DO 펄스로 개폐해 실제 폭·파지 feedback이 없습니다. 실기의 false grasp가 이 한계에서 나왔을 가능성이 큽니다.
 - 정식 릴리스 레인은 모션 안전 증거 수집 절차와 RTDE↔RealSense 타임스탬프 동기화가 갖춰지기 전까지 차단돼 있습니다. 자세한 게이트는 [PROJECT_LOG.md](PROJECT_LOG.md) §5와 §10에 있습니다.
 
 ## 문서
@@ -145,7 +157,7 @@ docs/                    프로젝트 개요 페이지 (GitHub Pages)
 |---|---|
 | [프로젝트 개요 페이지](https://changedayandnight.github.io/UR5e_SIM2REAL-public/) | 작업 셀, 파이프라인, 관측·행동 계약, 배포 레인, 채택 게이트를 한 페이지로 |
 | [DEPLOY_GUIDE.md](DEPLOY_GUIDE.md) | 실기 배포 전체 절차, 동작 계약, 그리퍼 펄스 실측 |
-| [PROJECT_LOG.md](PROJECT_LOG.md) | 원장: 고정 스택, Phase 0–4 실행 계약, 채택·배포 게이트, 실패 원장 F01–F99, 자산 출처 |
+| [PROJECT_LOG.md](PROJECT_LOG.md) | 원장: 고정 스택, Phase 0–4 실행 계약, 채택·배포 게이트, 실패 원장 F01–F100, 자산 출처 |
 | `exported_experimental/*/DEPLOY_README.md` | 번들별 관측 구성과 실행 절차 |
 
 ## 라이선스

@@ -4,7 +4,7 @@
 
 UR5e, OnRobot 2FG7, Intel RealSense D435i로 5 cm 큐브를 집어 정적 작업면의 가변 목표에 놓는 Isaac Lab 프로젝트다. 상태 기반 Teacher를 먼저 학습하고, RGB-D Student로 증류한 뒤, 같은 관측·행동·안전 계약을 실기 배포까지 유지한다.
 
-> **현재 판정 — 2026-09-25:** Teacher v2(34D, 대칭 그리퍼)와 Vision Student가 모두 sim 봉인 평가를 통과했다(seed 42~45 × 512 = 2048 에피소드). 실기 성공률은 아직 측정하지 않았다. 두 정책은 랩 실험 레인(`adopted: false`)이며 정식 릴리스 레인(패리티·지연 벤치마크·커밋 동결)은 거치지 않았다.
+> **현재 판정 — 2026-09-25:** Teacher v2(34D, 대칭 그리퍼)와 Vision Student가 모두 sim 봉인 평가를 통과했다(seed 42~45 × 512 = 2048 에피소드). Vision Student 실기 10회 평가는 파지 0/10(false grasp)이었고 원인 분석 후 재실험한다(F100). 두 정책은 랩 실험 레인(`adopted: false`)이며 정식 릴리스 레인(패리티·지연 벤치마크·커밋 동결)은 거치지 않았다.
 
 | 정책 | 성공률(placed) | Wilson 95% 하한 | 관측 | 번들 |
 |---|---|---|---|---|
@@ -693,6 +693,16 @@ F69 teacher(최종 학습 placed 0.926)의 채택 게이트가 top-5로 **{4950,
 
 **교훈.** 앞 단계가 실패하는 CI는 뒤 단계의 결함을 가린다 — 실패 단계를 고칠 때마다 그다음 단계가 처음으로 실행됐다. 지원 OS가 하나여도 CI가 다른 OS에서 돌면 경로·스레드 스케줄링 가정이 드러난다.
 
+### F100 — Vision Student 실기 10회 평가: 파지 0/10, false grasp (2026-09-25 채택 이후 · 포트폴리오 기준)
+
+**결과.** 배포 PC에서 Vision Student를 실제 UR5e·2FG7·D435i로 10회 실행했다. 정책은 카메라 영상만으로 큐브에 접근·하강했지만 10회 모두 파지에 실패했다. held latch는 파지로 판정했으나 실제로는 집지 못한 false grasp였다. 1회분 영상(27초)을 `docs/media/real_deploy.mp4`로 싣는다. 출처는 작성자 포트폴리오의 실기 평가 슬라이드이며, 실행 로그는 배포 PC에 있고 저장소에는 없다.
+
+**예상 원인(미검증).** ① 핑거 폭·파지력 피드백 없음 — §3.2 P0가 경고한 대로 `gripper_command_state`와 held latch는 명령 이력이라 미파지를 구별하지 못한다. ② 근접 시 FOV 이탈·depth 결측 — F88에서 계산한 대로 현 브라켓에서는 그리퍼 바로 아래 큐브가 세로 FOV 밖이다. ③ 그리퍼 지연. ④ TCP 오프셋 — `tcp_offset.yaml`이 `calibrated: false`다.
+
+**다음.** 핑거 폭·TCP 높이·깊이 영상을 단계별로 기록해 원인을 분리한 뒤 재실험한다. 원인 해소 전까지 실기 자동 작업 배포는 보류한다.
+
+**교훈.** sim 봉인 평가 94.53%는 실기 파지를 보장하지 않았다. 명령 상태로 추론한 파지 판정은 실기에서 거짓 양성을 낸다 — 파지 성공은 폭·힘 같은 물리 신호로 확인해야 한다.
+
 ## 7. 자산, 생성물, 출처
 
 ### 학습 자산
@@ -709,6 +719,7 @@ F69 teacher(최종 학습 placed 0.926)의 채택 게이트가 top-5로 **{4950,
 | `ur5e_workcell_drawing.html` | 프로젝트 작업 셀 치수도 | 유지되는 project-owned source asset |
 | `docs/index.html` | 프로젝트 개요 페이지(GitHub Pages `/docs`) | project-owned; 수치·계약은 이 원장을 따르며 원장이 바뀌면 함께 갱신 |
 | `docs/media/demo.gif` | README·개요 페이지 시연(채택 Teacher run `2026-09-20_22-22-51-931877` · Student run `2026-09-22_20-27-07-272017`의 sim pick-and-place 렌더, 10 fps) | project-owned; 정책을 다시 채택하면 같은 run의 `storyboard/pickplace_full.mp4`로 다시 만든다 |
+| `docs/media/real_deploy.mp4` · `real_deploy.gif` | 실기 배포 영상(F100, Vision Student 1회분 27초) / README용 2배속 GIF | 포트폴리오 원본 영상에서 무음 오디오 트랙만 제거(영상 재인코딩 없음) |
 
 학습에서 사용하는 현행 파일은 `assets/ur5e_2fg7/ur5e_tcw1_2fg7.urdf`에서 생성한 동명 `.usd`다. 구 `ur5e_2fg7.usd`는 사용하지 않는다.
 
