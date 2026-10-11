@@ -5,7 +5,7 @@ import datetime as dt
 import hashlib
 import json
 import os
-from pathlib import Path, PurePosixPath
+from pathlib import Path, PurePosixPath, PureWindowsPath
 import re
 import tempfile
 from typing import Iterable
@@ -125,7 +125,8 @@ def _sanitize_arguments(arguments: Iterable[str]) -> list[str]:
         value = str(raw)
         path = Path(value).expanduser()
         if path.is_absolute() or re.match(r"^[A-Za-z]:[\\/]", value):
-            sanitized.append(f"<external>/{path.name}")
+            # PureWindowsPath는 \와 / 모두 구분자로 본다 — Linux에서도 Windows 경로의 디렉터리가 새지 않는다
+            sanitized.append(f"<external>/{PureWindowsPath(value).name}")
         else:
             sanitized.append(value.replace("\\", "/"))
     return sanitized

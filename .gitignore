@@ -33,10 +33,11 @@ configs/real.local.yaml
 deployment/evidence/
 deployment/wheelhouse/
 
-# Project-owned documentation policy: root README is the only Markdown file.
+# Project-owned documentation policy (F97/F99): README.md · DEPLOY_GUIDE.md · PROJECT_LOG.md + bundle DEPLOY_README.md only.
 *.md
 !/README.md
 !/DEPLOY_GUIDE.md
+!/PROJECT_LOG.md
 
 # Training, evaluation and generated reports
 **/train/

@@ -71,6 +71,9 @@
   .tile .value{font-size:34px;font-weight:600;line-height:1.2;margin:4px 0 2px}
   .tile .sub{font-size:12.5px;color:var(--ink-3)}
   .tile.pending{border-left:3px solid var(--dim)}
+  .demo{margin:0 0 20px}
+  .demo img{display:block;width:100%;height:auto;border:1px solid var(--rule)}
+  .demo figcaption{font-size:12.5px;color:var(--ink-3);margin-top:6px}
   .tile.pending .value{font-size:28px}
 
   /* 공통 패널 */
@@ -131,6 +134,8 @@
     font-family:var(--mono);font-size:13px;line-height:1.6;color:var(--ink)}
   pre code{background:none;border:0;padding:0;font-size:inherit;overflow-wrap:normal}
   pre .c{color:var(--ink-3)}
+  pre+pre{margin-top:0}
+  h3.sub{font-size:14px;margin:18px 0 8px}
 
   .repo{display:grid;grid-template-columns:repeat(2,1fr);gap:0 28px;margin:0}
   .repo div{border-bottom:1px solid var(--rule-soft);padding:8px 0}
@@ -178,7 +183,8 @@
       <p class="lede">5 cm 큐브를 집어 작업면 위 가변 목표에 놓는 과제를 NVIDIA Isaac Lab에서 학습하고, 같은 관측·행동·안전 계약을 그대로 유지한 채 실기 UR5e로 옮기는 프로젝트입니다. 상태 기반 Teacher를 PPO로 먼저 학습한 뒤, RGB-D 영상만 보는 Vision Student로 증류합니다.</p>
       <nav class="links" aria-label="저장소 링크">
         <a href="https://github.com/ChangeDayAndNight/UR5e_SIM2REAL-public">GitHub 저장소</a>
-        <a href="https://github.com/ChangeDayAndNight/UR5e_SIM2REAL-public/blob/main/README.md">README · 원장</a>
+        <a href="https://github.com/ChangeDayAndNight/UR5e_SIM2REAL-public#readme">README · 빠른 시작</a>
+        <a href="https://github.com/ChangeDayAndNight/UR5e_SIM2REAL-public/blob/main/PROJECT_LOG.md">PROJECT_LOG · 원장</a>
         <a href="https://github.com/ChangeDayAndNight/UR5e_SIM2REAL-public/blob/main/DEPLOY_GUIDE.md">DEPLOY_GUIDE</a>
       </nav>
     </div>
@@ -194,6 +200,10 @@
   <section id="summary" aria-labelledby="h-summary">
     <h2 id="h-summary"><span class="num">00</span>현재 판정</h2>
     <p class="verdict">Teacher v2(34D, 대칭 그리퍼)와 Vision Student가 모두 sim 봉인 평가(seed 42–45 × 512 = 2,048 에피소드, 보조 없음)를 통과했습니다. 실기 성공률은 아직 측정하지 않았고, 정식 릴리스 레인(패리티·지연 벤치마크·커밋 동결)은 거치지 않았습니다.</p>
+    <figure class="demo">
+      <img src="media/demo.gif" width="964" height="270" alt="Teacher(왼쪽)와 Vision Student(오른쪽)가 5 cm 큐브를 집어 목표 위치에 놓는 Isaac Sim 롤아웃">
+      <figcaption>채택된 Teacher(왼쪽, 34D 상태 관측)와 Vision Student(오른쪽, RGB-D 영상 관측)의 Isaac Sim 롤아웃</figcaption>
+    </figure>
     <div class="kpis">
       <div class="tile">
         <div class="label">Teacher 성공률 (placed)</div>
@@ -270,7 +280,7 @@
           <li>인식 오차 DR, 실행 속도 상한 clamp</li>
           <li>16,384 env × 25k iter</li>
         </ul>
-        <div class="where">Isaac-BinPick-UR5e-Teacher-v0</div>
+        <div class="where">scripts/train.ps1 -Preset Teacher</div>
       </li>
       <li class="step">
         <span class="ph">PHASE 2</span>
@@ -280,7 +290,7 @@
           <li>RGB-D 112² + 고유수용 관측</li>
           <li>512 env × 25k iter</li>
         </ul>
-        <div class="where">Phase2/VisionPick_Train.py</div>
+        <div class="where">scripts/train.ps1 -Preset Distill</div>
       </li>
       <li class="step">
         <span class="ph">PHASE 3</span>
@@ -409,7 +419,7 @@
   </section>
 
   <section id="ledger" class="ledger" aria-labelledby="h-ledger">
-    <h2 id="h-ledger"><span class="num">06</span>실패 원장에서 — F01–F98 중 네 건</h2>
+    <h2 id="h-ledger"><span class="num">06</span>실패 원장에서 — F01–F99 중 네 건</h2>
     <div class="grid2">
       <div class="panel">
         <div class="fid">F70</div>
@@ -436,7 +446,7 @@
         <p class="lesson">렌더 결함은 loss로 드러나지 않는다 — 채널별 공간 통계를 학습 시작 시점에도 검사한다.</p>
       </div>
     </div>
-    <p class="small muted" style="margin:14px 0 0">전체 원장(문제 · 기전 · 조치 · 교훈)은 <a href="https://github.com/ChangeDayAndNight/UR5e_SIM2REAL-public/blob/main/README.md">README.md</a> §6에 있습니다.</p>
+    <p class="small muted" style="margin:14px 0 0">전체 원장(문제 · 기전 · 조치 · 교훈)은 <a href="https://github.com/ChangeDayAndNight/UR5e_SIM2REAL-public/blob/main/PROJECT_LOG.md">PROJECT_LOG.md</a> §6에 있습니다.</p>
   </section>
 
   <section id="stack" aria-labelledby="h-stack">
@@ -457,14 +467,24 @@
   </section>
 
   <section id="start" aria-labelledby="h-start">
-    <h2 id="h-start"><span class="num">08</span>빠른 시작 — 실기 배포 (Isaac Sim 불필요)</h2>
-    <p class="small"><code>setup.ps1</code>이 conda 환경 → 의존성 → <code>configs\real.local.yaml</code> 템플릿 → 배포 점검 런북을 한 번에 실행합니다. 로봇·카메라가 없어도 여기까지는 돕니다. 학습 절차는 README §2를 따릅니다.</p>
+    <h2 id="h-start"><span class="num">08</span>빠른 시작</h2>
+    <p class="small">모든 경로는 저장소 루트 기준 상대 경로라 어느 폴더에 clone해도 됩니다. 명령은 저장소 루트에서 PowerShell로 실행합니다. 학습·시뮬레이션은 Windows 11 + NVIDIA GPU(VRAM 8 GB 이상), 실기 배포는 Isaac 없는 Windows 11 PC가 필요합니다.</p>
 <pre><code>git clone https://github.com/ChangeDayAndNight/UR5e_SIM2REAL-public.git
-cd UR5e_SIM2REAL-public
-powershell -ExecutionPolicy Bypass -File setup.ps1
+cd UR5e_SIM2REAL-public</code></pre>
+    <h3 class="sub">1 · 시뮬레이션에서 학습된 정책 보기</h3>
+<pre><code><span class="c"># 처음 한 번: conda 환경 isaac51에 Isaac Sim 5.1 · Isaac Lab v2.3.2 · PyTorch · 프로젝트 확장 설치</span>
+powershell -ExecutionPolicy Bypass -File scripts/bootstrap_training.ps1
+conda activate isaac51
+python Phase3/SimDeploy_Rehearsal_Teacher.py --policy-dir exported_experimental/teacher_177c7eefed0f --gui --episodes 5</code></pre>
+    <h3 class="sub">2 · 처음부터 학습</h3>
+<pre><code>powershell -ExecutionPolicy Bypass -File scripts/train.ps1 -Preset Teacher -Smoke
+powershell -ExecutionPolicy Bypass -File scripts/train.ps1 -Preset Teacher -NumEnvs 16384 -MaxIterations 25000 -Seed 42 -Headless
+powershell -ExecutionPolicy Bypass -File scripts/train.ps1 -Preset Distill -DistillFrom &lt;TEACHER_MODEL_PT&gt; -NumEnvs 512 -MaxIterations 25000 -Seed 42 -Headless</code></pre>
+    <h3 class="sub">3 · 실기 배포 (Isaac Sim 불필요)</h3>
+<pre><code>powershell -ExecutionPolicy Bypass -File setup.ps1
 conda activate env_ur_real
 
-<span class="c"># 1) configs\real.local.yaml 에 robot.ip · camera.serial 기입, TCP offset · hand-eye 캘리브레이션</span>
+<span class="c"># 1) configs\real.local.yaml 에 로봇 IP · 카메라 시리얼 입력, TCP offset · hand-eye 캘리브레이션</span>
 <span class="c"># 2) 추론만(모션 없음) — 검출률 30% 미만이면 3)으로 가지 않는다</span>
 python Phase4\Run_Task_Teacher.py --policy-dir exported_experimental\teacher_177c7eefed0f `
     --dry-run --verbose-perception --target-pos="-0.50,0.15,-0.0125"
@@ -517,7 +537,7 @@ python Phase4\Run_Task_Teacher.py --policy-dir exported_experimental\teacher_177
       </div>
       <div>
         <h3>문서와 라이선스</h3>
-        <p>이 페이지는 개요입니다. 실행 계약 · 진행 상태 · 실패 원장의 원본은 <a href="https://github.com/ChangeDayAndNight/UR5e_SIM2REAL-public/blob/main/README.md">README.md</a>, 실기 절차는 <a href="https://github.com/ChangeDayAndNight/UR5e_SIM2REAL-public/blob/main/DEPLOY_GUIDE.md">DEPLOY_GUIDE.md</a>입니다.</p>
+        <p>이 페이지는 개요입니다. 실행 계약 · 진행 상태 · 실패 원장의 원본은 <a href="https://github.com/ChangeDayAndNight/UR5e_SIM2REAL-public/blob/main/PROJECT_LOG.md">PROJECT_LOG.md</a>, 실기 절차는 <a href="https://github.com/ChangeDayAndNight/UR5e_SIM2REAL-public/blob/main/DEPLOY_GUIDE.md">DEPLOY_GUIDE.md</a>입니다.</p>
         <p style="margin:0">코드는 MIT License, 동봉 자산은 각 폴더의 NOTICE를 따릅니다. © 2026 ChangeDayAndNight</p>
       </div>
     </div>

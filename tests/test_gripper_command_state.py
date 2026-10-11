@@ -616,12 +616,27 @@ def test_real_late_high_after_timeout_is_bounded_safe_low_only_and_never_commits
     assert time.perf_counter() - arm_started < 0.1
     assert arm_sdk_calls == []
 
+    # The timeout can be published by both the watchdog and the caller, so up to
+    # two stop threads run emergency_stop(), and each one latches (clearing the
+    # pending slot) first.  Let every stop thread finish before modelling the
+    # later reservation; otherwise a late latch erases it and the checks below
+    # race the scheduler (seen on Linux CI).
+    stop_deadline = time.perf_counter() + 0.6  # 작업자의 release_high.wait(1.0) 안에 끝나야 한다
+    stop_threads_seen = 0
+    while time.perf_counter() < stop_deadline:
+        stop_threads = [
+            t for t in threading.enumerate() if t.name == "gripper-dispatch-timeout-stop"
+        ]
+        if not stop_threads:
+            break
+        stop_threads_seen += len(stop_threads)
+        for thread in stop_threads:
+            thread.join(timeout=max(0.0, stop_deadline - time.perf_counter()))
+    assert stop_threads_seen >= 1
+    assert robot._stop_sequence_active is False
+
     # Model a later reservation marker before the stale SDK returns.  The old
     # generation may update only its own ticket, never the new pending slot.
-    stop_start_deadline = time.perf_counter() + 1.0
-    while not robot._stop_sequence_active and time.perf_counter() < stop_start_deadline:
-        time.sleep(0.001)
-    assert robot._stop_sequence_active is True
     later_generation = tickets[0].generation + 1
     later_pending = types.SimpleNamespace(
         status="acked",

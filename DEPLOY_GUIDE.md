@@ -41,7 +41,7 @@ python deployment\DeployPC_Runbook.py --policy-dir exported_experimental\teacher
 ## 1. 실기 설정 (사람 작업)
 
 1. `configs\real.local.yaml` — 로봇 IP, D435i 시리얼(`camera.serial`), 848×480 컬러+depth 스트림 확인.
-   `robot.tcp_command_verified`가 `false`면 어댑터가 `servoL`을 거부합니다. TCP 명령 검증(README §5) 후 `true`로 바꾸십시오.
+   `robot.tcp_command_verified`가 `false`면 어댑터가 `servoL`을 거부합니다. TCP 명령 검증(PROJECT_LOG.md §5) 후 `true`로 바꾸십시오.
 2. **캘리브레이션** — `deployment\Calib_TcpOffset.py`, `deployment\Calib_HandEye.py`로 실측한 뒤
    `configs\calib\tcp_offset.yaml`·`hand_eye.yaml`의 `meta.calibrated: true`로 바꿉니다.
    값이 `false`면 모션이 거부됩니다(`--accept-uncalibrated`로만 감수 가능).

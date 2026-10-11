@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 import hashlib
 import subprocess
+import types
 
 import numpy as np
 import pytest
@@ -209,6 +210,17 @@ def test_copy_tree_rejects_symlink_input(tmp_path):
         build_bundle._copy_tree(source, tmp_path / "destination")
 
 
+def _pretend_windows_os(monkeypatch) -> None:
+    """verify_deployment가 보는 os.name만 'nt'로 바꾼다.
+
+    전역 os.name을 바꾸면 Linux(CI)에서 pathlib이 WindowsPath를 만들다 pytest까지 죽는다.
+    """
+    fake_os = types.ModuleType("os")
+    fake_os.__dict__.update(vars(verify_deployment.os))
+    fake_os.name = "nt"
+    monkeypatch.setattr(verify_deployment, "os", fake_os)
+
+
 def test_windows_runtime_uses_supported_win11_x64_baseline():
     runtime = json.loads((ROOT / "deployment/runtime-win11.json").read_text(encoding="utf-8"))
     assert runtime["os_product"] == "Windows 11"
@@ -246,7 +258,7 @@ def test_runtime_rejects_python_distributions_outside_lock_policy(monkeypatch, t
     monkeypatch.setattr(verify_deployment.platform, "python_implementation", lambda: "CPython")
     monkeypatch.setattr(verify_deployment.platform, "python_version", lambda: "3.11.15")
     monkeypatch.setattr(verify_deployment.platform, "machine", lambda: "AMD64")
-    monkeypatch.setattr(verify_deployment.os, "name", "nt")
+    _pretend_windows_os(monkeypatch)
     monkeypatch.setattr(
         verify_deployment.sys,
         "getwindowsversion",
@@ -421,7 +433,7 @@ def test_runtime_and_lock_parse_and_hash_the_same_opened_payloads(monkeypatch, t
     monkeypatch.setattr(verify_deployment.platform, "python_implementation", lambda: "CPython")
     monkeypatch.setattr(verify_deployment.platform, "python_version", lambda: "3.11.15")
     monkeypatch.setattr(verify_deployment.platform, "machine", lambda: "AMD64")
-    monkeypatch.setattr(verify_deployment.os, "name", "nt")
+    _pretend_windows_os(monkeypatch)
     monkeypatch.setattr(
         verify_deployment.sys,
         "getwindowsversion",
