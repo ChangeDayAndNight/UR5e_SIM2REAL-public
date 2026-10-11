@@ -1,0 +1,2 @@
+# assets/asset_manifest.json은 이 URDF를 Windows 체크아웃(CRLF) 바이트로 해시한다 — 어느 OS·autocrlf 설정에서도 같은 바이트가 나오게 고정
+assets/ur5e_2fg7/ur5e_tcw1_2fg7.urdf text eol=crlf

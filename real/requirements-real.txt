@@ -1,0 +1,3 @@
+# Compatibility entry point.  The canonical Win11 deployment lock is exact
+# and SHA-256 pinned; never add an unpinned dependency here.
+-r ../deployment/requirements-win11.lock.txt

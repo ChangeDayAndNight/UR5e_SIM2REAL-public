@@ -1,0 +1,60 @@
+{
+  "policy_kind": "teacher_state",
+  "obs_dim": 34,
+  "action_dim": 7,
+  "layout": [
+    {
+      "name": "joint_pos",
+      "size": 6
+    },
+    {
+      "name": "joint_vel",
+      "size": 6
+    },
+    {
+      "name": "gripper_command_state",
+      "size": 1
+    },
+    {
+      "name": "tcp_pose",
+      "size": 7
+    },
+    {
+      "name": "target_pos",
+      "size": 3
+    },
+    {
+      "name": "object_pos",
+      "size": 3
+    },
+    {
+      "name": "held",
+      "size": 1
+    },
+    {
+      "name": "last_action",
+      "size": 7
+    }
+  ],
+  "action_scheme": "ik_rel",
+  "vertical_grasp_only": true,
+  "contact_force_scale_n": 25.0,
+  "target_range": {
+    "x": [
+      -0.6,
+      -0.4
+    ],
+    "y": [
+      -0.22,
+      0.22
+    ],
+    "z": [
+      -0.0125,
+      -0.0125
+    ]
+  },
+  "cfg_hash": "8b17df1fcc06cbf2",
+  "empirical_normalization": null,
+  "policy_sha256": "d7e3b2d12dcd9c2747a9700e0cc57ff6d7bbf4c67f239904de4b1933ba4e3d69",
+  "exported_at": "2026-09-21T19:39:57"
+}

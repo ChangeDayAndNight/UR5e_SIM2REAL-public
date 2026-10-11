@@ -1,0 +1,85 @@
+# =====================================================================
+# dr.yaml — Domain Randomization 범위 (요소2). sim 학습에서만 소비되지만,
+#           "실측이 이 범위 안에 들어오는가"를 Phase3 게이트가 검증하므로
+#           real 쪽 문서로도 기능한다.
+# 소비처: source/ur5e_binpick/.../tasks/binpick/mdp/events_dr.py (EventTerm), common/depth_noise.py (관측 노이즈)
+# =====================================================================
+
+physics:
+  # 검증됨: upstream events.randomize_rigid_body_mass / randomize_rigid_body_material
+  #         / randomize_actuator_gains 존재 (Isaac Lab 2.1.0)
+  object_mass_scale: [0.5, 2.0]          # 곱셈 스케일
+  # ★2026-07-06 상향★: 0.4~1.2에선 그립이 슬립(Grasp_PhysicsTest 확인) → 잡아도 흘러내려
+  #   집기 학습 불가. teacher가 pick-place 모션을 배우도록 마찰↑. 학생/배포 단계에서
+  #   실측 분포로 하향 재검토(현 값은 '집기 학습용'). grip 유지력의 주 레버.
+  object_friction: [1.2, 2.5]            # static/dynamic 공통 범위 (grip 유지의 주 레버 — 2026-07-10
+                                         #   하한 1.5 실험은 mid-air 파지 성공률 무변화라 원복)
+  object_restitution: [0.0, 0.2]
+  # ⚠️ TODO(Phase3 SysID — 리뷰 지적 2026-07-10): finger(pad) 마찰은 현재 DR 미포함, 전역
+  #   기본재질 static/dynamic=2.0 고정(binpick_env_cfg.py sim.physics_material). object_friction과
+  #   PhysX combine되는 '나머지 절반'이라 grip 레버가 반만 bracket됨. teacher/student가 같은 DR을
+  #   봐야 하므로(비대칭 AC 정합) 현재는 양쪽 다 고정 2.0으로 학습하고, 실 2FG7 pad 마찰을 Phase3
+  #   SysID로 실측한 뒤 finger_friction 범위를 여기 추가+randomize_rigid_body_material(robot finger
+  #   bodies) 배선한다. 그때 teacher/student 동반 재학습.
+  finger_friction: [1.0, 2.5]            # nominal 2.0을 포함하는 SysID 전 보수적 prior
+  joint_damping_scale: [0.8, 1.2]
+  joint_stiffness_scale: [0.9, 1.1]
+
+depth_noise:
+  # common/depth_noise.apply_depth_noise — 전처리 "이전"의 raw depth에 적용
+  # σ(z) = sigma_base_m + sigma_scale_per_m2 * z^2  (D435i 오차 모델 근사)
+  sigma_base_m: 0.002
+  sigma_scale_per_m2: 0.004
+  dropout_prob: [0.00, 0.05]             # hole(결측) 비율 — 결측은 전처리가 far로 채움
+  # TODO(확장): 엣지 노이즈, fill-rate 저하 모사
+
+rgb_noise:
+  # ★2026-07-17 RGB-D 전환(B안)★ common/rgb_noise.apply_rgb_noise — 전처리 "이전"의
+  # raw rgb(float[0,1])에 적용 (sim 전용 — real은 센서·조명이 진짜 변동을 만든다).
+  # 에피소드마다 events_dr가 아래 범위에서 재샘플(depth_noise와 동일 패턴).
+  # 근거: DextrAH-RGB의 color jitter DR(밝기/대비/픽셀 노이즈) 축약판 —
+  # 색조(hue) 변환은 배경 색 DR(visual_color)이 대신한다.
+  brightness_scale: [0.7, 1.3]           # 곱셈 (전역 밝기 — 조명 DR과 중첩 허용)
+  contrast_scale: [0.8, 1.2]             # (x-mean)*c+mean
+  pixel_sigma: [0.0, 0.03]               # 가우시안 픽셀 노이즈 σ ([0,1] 스케일)
+
+lighting:
+  # ★2026-07-17 구현★: 커스텀 EventTerm events_dr.resample_light_intensity —
+  # /World/light(DomeLight)가 전역이라 ★per-env가 아니라 전역★ interval 재샘플
+  # (베이스 3000 × 아래 scale). stock EventTerm 없음은 여전(§4-6 확인 유지).
+  intensity_scale: [0.3, 2.0]
+  # 색 DR: upstream randomize_visual_color(검증됨) — 벨트/스탠드/큐브 시각색.
+  #   ⚠️ 텍스처 DR(randomize_visual_texture_material)은 텍스처 자산 소스 미확정
+  #   (오프라인 Windows — Nucleus 텍스처 목록 부재)이라 TODO 보류.
+  # ★2026-07-18 false 전환 (RGB-D 증류 r1/r2 실패 분석)★: 색 DR은
+  #   replicate_physics=False 강제 → VRAM 폭증 → 128env 제한 → 총 샘플이 검증
+  #   레시피(512env)의 1/3 + 소형 CNN 외형 불변성 난도 폭증(이중 타격, r1 0.8%·
+  #   r2 1.9%). 예산 정합 노선 = SplatSim(색 DR 없이 실사 렌더(NuRec 파인튠)로
+  #   외형 갭 해소). rgb 지터·전역 광량 DR은 유지. 재활성 시 num_envs 재실측 필수.
+  randomize_object_color: false
+
+camera_pose:
+  # ⚠️ 검증됨: stock EventTerm 없음 → 커스텀 작성 (TODO: reset 시 set_world_poses)
+  # 이 섭동 범위 = "허용 캘리브레이션 오차" — Calib_Verify 측정치가 이 범위를
+  # 벗어나면 재학습 판정 (요소4와의 연결고리)
+  pos_perturb_m: 0.01                    # ±1 cm
+  rot_perturb_deg: 1.0                   # ±1°
+
+latency:
+  # 검증됨: isaaclab.utils.buffers.DelayBuffer 존재 — 자체 구현 금지
+  obs_delay_steps: [0, 2]                # 제어스텝 단위 (20Hz 기준 0~100ms)
+  action_delay_steps: [0, 1]             # ★팔 채널 전용★ — 그리퍼는 수퍼바이저가 루프 안에서 재계산(F92 문서 정정)
+
+perception:
+  # ★★Teacher v2(2026-09-18)★★ Teacher 관측의 큐브 위치는 참값이 아니라 ★인식 추정치★다
+  #   (mdp/perception_model.py = 배포 common/teacher_obs.py와 같은 규칙). 아래 범위는 실기 인식
+  #   모듈(depth 역투영, common/cube_depth_locator.py)의 오차를 감싸도록 잡았고, Phase3 게이트가
+  #   "실측 오차가 이 범위 안인가"를 대조한다. sim 봉인 표본 실측(112²): 중심 오차 p50 2.0~2.5 cm,
+  #   p90 3.2~4.5 cm, 가시 대비 검출 66~78%. 실기 848×480은 픽셀이 7배 조밀해 더 정밀하다.
+  #   에피소드마다 재샘플(events reset), 노이즈·검출은 프레임마다 독립.
+  xy_sigma_m: [0.003, 0.015]             # 검출 시 xy 가우시안 σ (축별)
+  z_sigma_m: [0.001, 0.005]              # 검출 시 z σ — 쥐지 않았으면 z는 작업면 안착 중심으로 고정
+  bias_m: [0.0, 0.010]                   # 에피소드 고정 편향 크기(xy 임의 방향) — hand-eye 잔차 모사
+  detect_prob: [0.6, 1.0]                # 기하상 보이는 프레임의 검출 확률
+  blind_dist_m: [0.17, 0.25]             # 카메라-큐브 거리 미만 = 검출 불가 (D435i 848×480 Min-Z ≈ 0.17)
+  # FOV 밖 = 검출 불가 — 각도는 configs/sim.yaml camera(horizontal/vertical_fov_deg = 실기 color 계약).

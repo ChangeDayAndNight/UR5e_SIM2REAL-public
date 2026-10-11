@@ -1,0 +1,80 @@
+{
+  "obs_dim": 50206,
+  "action_dim": 7,
+  "layout": [
+    {
+      "name": "depth",
+      "size": 12544
+    },
+    {
+      "name": "rgb",
+      "size": 37632
+    },
+    {
+      "name": "joint_pos",
+      "size": 6
+    },
+    {
+      "name": "joint_vel",
+      "size": 6
+    },
+    {
+      "name": "gripper_command_state",
+      "size": 1
+    },
+    {
+      "name": "tcp_pose",
+      "size": 7
+    },
+    {
+      "name": "target_pos",
+      "size": 3
+    },
+    {
+      "name": "last_action",
+      "size": 7
+    }
+  ],
+  "gripper_command_state": {
+    "name": "gripper_command_state",
+    "semantics": "delayed_dispatched_binary_command_move_toward",
+    "update_point": "after_delayed_or_successfully_dispatched_command",
+    "visible_at": "next_observation",
+    "range": [
+      0.0,
+      1.0
+    ],
+    "open": 0.0,
+    "closed": 1.0,
+    "control_hz": 20.0,
+    "transition_s": 1.2,
+    "transition_steps": 24,
+    "sim_reset": "open",
+    "real_startup": "unknown_until_explicit_open_settled",
+    "real_dispatch_gate": "target_pin_high_sdk_success_bounded_ack",
+    "real_sdk_success": "return_is_exactly_true",
+    "real_dispatch_ack_timeout_s": 0.04,
+    "real_startup_settle_origin": "successful_pulse_completion",
+    "rapid_reversal_while_pulse_active": "invalid_fail_closed",
+    "late_high_after_sdk_entry": "possible_safe_low_attempt_only_motion_p0",
+    "fault_or_estop": "invalid",
+    "physical_width_feedback": false
+  },
+  "action_scheme": "ik_rel",
+  "target_range": {
+    "x": [
+      -0.6,
+      -0.4
+    ],
+    "y": [
+      -0.22,
+      0.22
+    ],
+    "z": [
+      -0.0125,
+      -0.0125
+    ]
+  },
+  "cfg_hash": "d85bf7158375da17",
+  "empirical_normalization": null
+}

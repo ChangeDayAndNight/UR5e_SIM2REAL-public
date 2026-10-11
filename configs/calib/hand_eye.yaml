@@ -1,0 +1,59 @@
+# =====================================================================
+# hand_eye.yaml — camera 장착 extrinsic (요소4). ★sim/real 공유 단일 소스★
+#   - sim: mdp/scene.py가 이 변환으로 카메라(TiledCamera)를 배치
+#   - real: Calib_HandEye.py(실측)가 이 파일을 갱신
+# ★★2026-07-15 v4 — 사용자 GUI 직접 배치(브라켓 플랜지 장착 정정 후)★★:
+#   ★브라켓 장착 위치 정정(사용자 Real_Environment 실사진)★: 브라켓은 2FG7 베이스가
+#   아니라 ★TCW1 '이전'의 플랜지(tool0)★에 장착(Ø75 보어 = UR5e 손목 외경). 이에
+#   맞춰 place_d435i_gui.py로 D435i 고스트를 재배치(Phase1/logs/d435i_ghost_pose.yaml)
+#   → 메시 프레임을 optical 관례로 변환해 굽음(SVD 직교화, 잔차 9e-16):
+#   - 광학중심(tool0=wrist_3 프레임): (0.0000, -0.0560, +0.0129)  [v3 대비 z −0.112:
+#     브라켓이 그리퍼→플랜지로 이동해 카메라도 손목 근처로]
+#   - 광축: 공구축과 16.88° 수렴 → 공구축 z≈0.198에서 교차(= TCP 0.226 바로 아래
+#     — 파지 접근 주시). 카메라 x(이미지 우) ≈ tool0 +x (롤 관례 유지).
+#   ★메시 프레임 주의★: d435.dae의 렌즈(글라스) 면 = ★+y_mesh★ (2026-07-15 재질
+#     지오메트리 파싱으로 실증 — 전면 디테일이 y=+10~12mm 면, 후면 슬롯이 -y 면).
+#     optical→mesh 보정 = scene.py D435_MESH_IN_OPTICAL (본체 시각 부착에만 적용;
+#     이 파일의 행렬은 순수 optical 관례 = TiledCamera·real 파이프라인 그대로 사용).
+#   ⚠️ D435i 최소거리 ~0.28m: 파지 최종 구간 depth 결손(전처리 최소거리 무효화
+#     규칙으로 sim=real 동일 모사).
+# ⚠️ 실기: Calib_HandEye(eye-in-hand AX=XB)로 T_flange_cam 실측. 실측-공칭 차가
+#   dr.yaml camera_pose(±1cm/±1°)를 벗어나면 재학습 판정(Calib_Verify).
+# ★★2026-07-16 v6 — ★실기 hand-eye 캘리브레이션 실측★ (calibration/captures_final)★★:
+#   Method A(intrinsics 고정 후 hand-eye+board BA), ChArUco 11x8(15/11mm, DICT_4X4_50),
+#   27뷰/1890코너. ★재투영 RMS 4.11px = 2.01mm @ 작업거리 0.435m★ (per-view 중앙값 1.0mm).
+#   EE 프레임 = UR flange(getActualTCPPose, TCP=0 확인: 카메라 z=+18mm 플랜지 근처)
+#   = URDF tool0 = wrist_3 방향(체인 합성 항등 — 검증). 카메라 프레임 = ★COLOR optical★.
+#   - 광학중심(flange): (−0.0225, −0.0698, +0.0184) — 브라켓쪽(−y), v4와 같은 편.
+#   - 광축: 공구축에서 ★바깥(발산)으로 16.6°★ — v4 공칭(수렴 +16.9°)과 ★틸트 방향 반대★.
+#     사용자 지적 "Bracket이 반대로 장착"의 실체 = 웨지 틸트 방향(수렴→발산)이었음.
+#     (v5의 '반대편 180°' 해석은 오독 — 실측으로 폐기·URDF도 v4 측으로 복귀 후 실측 반영.)
+#   - 실측-공칭(v4) 차: (−22.5, −13.8, +5.5)mm·틸트 반전 → dr.yaml camera_pose(±1cm/±1°)
+#     ★초과 = vision(Phase2) 재학습 판정★ (teacher는 무카메라 — 영향 없음. Phase2는 미학습이라
+#     낭비 없음 — 이 실측 기하로 처음부터 학습하면 됨).
+#   ⚠️ ★real 파이프라인 계약★: 이 extrinsic은 COLOR 프레임 기준 → 배포 depth는 반드시
+#     ★depth→color 정렬(rs.align)★ 후 사용할 것 (real/ pyrealsense2 구현 시 TODO).
+# (이력: v1 2026-07-14 공칭 → v2 웨지면 해석 → v3 GUI 배치(브라켓 오독) → v4 플랜지 장착
+#  정정 재배치 → v5 180° 반전(오독) → ★v6 실기 캘리브 실측(2026-07-16)★.)
+# ★★2026-07-16 v7 — 병진 기계 보정(사용자 브라켓 GUI 배치 + 링 동심 구속)★★:
+#   사용자 place_bracket_gui 배치(브라켓 Rx180 뒤집힘 장착 확정) 후 렌더에서 브라켓 링이
+#   손목 축에서 21.4mm 이탈 → "로봇을 움직여 맞춰"(사용자) = 브라켓+카메라 조립체 기준으로
+#   플랜지 원점을 이동 = ★병진에 (+21.4, -0.1, 0)mm(tool0) 기계 보정★. 회전은 실측 유지.
+#   결과 광학중심 x: -22.5mm → ★-1.2mm ≈ 브라켓 대칭 중심★ (기계적으로 정합적).
+#   근거: 두 캘리브 세션 병진 산포 ~25mm(불안정) > 보정량 21mm — 링 동심(물리 구속)이
+#   병진 오차를 교정한다고 판단. ⚠️ ★Phase3 Calib_Verify에서 실측 재검증 필수★ —
+#   재검증이 v6 병진을 지지하면 이 보정을 되돌리고 브라켓 시각만 조정할 것.
+T_flange_cam:   # 4x4 homogeneous, row-major. flange(wrist_3) frame → camera frame (COLOR optical)
+  - [ 0.9995530733, -0.0251206647,  0.0162051171, -0.0011652429]
+  - [ 0.0286999091,  0.9580782886, -0.2850654454, -0.0698647569]
+  - [-0.0083647373,  0.2854031274,  0.9583710586,  0.0184224864]
+  - [ 0.0,           0.0,           0.0,           1.0000000000]
+
+meta:
+  # v6 회전 실측 뒤 v7 병진 기계 보정을 적용했지만 matched-pose 재검증을 하지 않았다.
+  # 행렬은 sim scratch 입력으로 보존하되 실기 승인 상태로 해석하지 않는다.
+  calibrated: false
+  mount: eye_in_hand                 # ★2026-07-14 사용자 확정★
+  method: handeye_charuco_BA_methodA_ring_concentric  # 실측 회전 + 병진 기계보정(브라켓 링 동심)
+  date: "2026-07-16"
+  residual_m: 0.00201                # 병진보정 전 재투영 RMS; 현행 v7 승인 잔차가 아님

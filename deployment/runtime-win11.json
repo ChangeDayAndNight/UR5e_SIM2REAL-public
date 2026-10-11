@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "os": "Windows",
+  "os_product": "Windows 11",
+  "minimum_build": 22000,
+  "architecture": "AMD64",
+  "python": "3.11.15",
+  "python_implementation": "CPython",
+  "allowed_bootstrap_packages": [],
+  "control_hz": 20.0,
+  "rtde_hz": 500.0,
+  "powershell_execution_policy": "RemoteSigned",
+  "notes": "Windows 11 x64 baseline. Rebuild the hashed cp311/win_amd64 wheelhouse and repeat receive-only no-motion HIL evidence for any change."
+}

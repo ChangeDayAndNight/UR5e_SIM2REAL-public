@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UR5e 학습환경 치수도 / UR5e Workcell Dimensions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#e7ecef; --sheet:#f4f7f8; --ink:#0e1a24; --ink-2:#3c525f;
+    --rule:#9aabb5; --steel:#7b8b95; --work:#0f7a6e; --dim:#b8430f; --robot:#31586f;
+    --grid:rgba(14,26,36,.055);
+    --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:"IBM Plex Sans KR",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--paper);
+    background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+    background-size:20px 20px;
+    color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.6;padding:28px 20px 64px;
+  }
+  .sheet{max-width:1180px;margin:0 auto;background:var(--sheet);border:2px solid var(--ink);
+    box-shadow:0 1px 0 rgba(14,26,36,.25),0 18px 40px -28px rgba(14,26,36,.7);}
+  header.masthead{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 18px;padding:18px 24px 14px;border-bottom:2px solid var(--ink);}
+  h1{font-size:20px;font-weight:600;margin:0;letter-spacing:-.01em}
+  .sub{font-family:var(--mono);font-size:12px;color:var(--ink-2);letter-spacing:.04em}
+  .tag{margin-left:auto;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+    border:1px solid var(--dim);color:var(--dim);padding:3px 9px;border-radius:2px;white-space:nowrap;}
+  .keys{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:2px solid var(--ink);background:#eef3f4}
+  .keys div{padding:14px 20px;border-right:1px solid var(--rule)}
+  .keys div:last-child{border-right:0}
+  .keys span{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-2);margin-bottom:4px}
+  .keys b{font-family:var(--mono);font-size:19px;font-weight:600;color:var(--dim);letter-spacing:-.01em}
+  .keys em{display:block;font-style:normal;font-family:var(--mono);font-size:11px;color:var(--ink-2);margin-top:3px}
+  section{padding:22px 24px 8px;border-bottom:1px dashed var(--rule)}
+  section:last-of-type{border-bottom:0}
+  h2{font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--ink-2);margin:0 0 14px;display:flex;align-items:center;gap:10px;}
+  h2::after{content:"";flex:1;height:1px;background:var(--rule)}
+  .viewwrap{width:100%;overflow-x:auto}
+  svg{display:block;width:100%;height:auto;min-width:640px}
+  .legend{display:flex;flex-wrap:wrap;gap:6px 20px;font-family:var(--mono);font-size:11.5px;color:var(--ink-2);margin:10px 2px 18px;}
+  .legend i{display:inline-block;width:11px;height:11px;margin-right:6px;vertical-align:-1px;border:1px solid var(--ink)}
+  table{border-collapse:collapse;width:100%;font-family:var(--mono);font-size:12.5px;margin-bottom:18px}
+  th,td{border:1px solid var(--rule);padding:7px 10px;text-align:left}
+  th{background:rgba(14,26,36,.06);font-weight:600;letter-spacing:.04em}
+  td.n{text-align:right}
+  tr.hi td{background:rgba(15,122,110,.08)}
+  td.src{font-size:11px;color:var(--ink-2);text-align:center}
+  pre{font-family:var(--mono);font-size:12.5px;line-height:1.62;background:var(--ink);color:#d6e2e8;
+    padding:16px 18px;overflow-x:auto;margin:0 0 18px;border-radius:2px;}
+  pre .c{color:#7e97a4} pre .k{color:#7fd1c4} pre .g{color:#f0a878}
+  ol.notes{margin:0 0 18px;padding-left:20px;font-size:14px}
+  ol.notes li{margin-bottom:7px}
+  ol.notes b{color:var(--dim);font-weight:600}
+  .titleblock{display:grid;grid-template-columns:repeat(4,1fr);border-top:2px solid var(--ink);font-family:var(--mono);font-size:11.5px;}
+  .titleblock div{padding:10px 14px;border-right:1px solid var(--rule)}
+  .titleblock div:last-child{border-right:0}
+  .titleblock span{display:block;font-size:9.5px;letter-spacing:.14em;color:var(--ink-2);text-transform:uppercase;margin-bottom:2px}
+  @media (max-width:720px){
+    body{padding:14px 8px 40px} section{padding:18px 14px 6px}
+    .keys{grid-template-columns:1fr} .keys div{border-right:0;border-bottom:1px solid var(--rule)}
+    .titleblock{grid-template-columns:repeat(2,1fr)} .titleblock div{border-bottom:1px solid var(--rule)}
+  }
+  @media print{body{background:#fff;padding:0}.sheet{box-shadow:none}}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <header class="masthead">
+    <div>
+      <h1>UR5e 학습환경 치수도</h1>
+      <div class="sub">UR5e WORKCELL / ALL DIM. IN mm / NOT TO SCALE</div>
+    </div>
+    <div class="tag">Ref. for Claude Code</div>
+  </header>
+
+  <div class="keys">
+    <div>
+      <span>베이스 중심 → workspace 끝단</span>
+      <b>X = 210</b>
+      <em>수평거리 · 프로파일 바깥면 기준</em>
+    </div>
+    <div>
+      <span>베이스 중심 → workspace 상면</span>
+      <b>Z = −37.5</b>
+      <em>workspace가 베이스보다 37.5 낮음</em>
+    </div>
+    <div>
+      <span>workspace 구성</span>
+      <b>580 × 1250</b>
+      <em>X: 40+500+40 · Y: 40+1170+40</em>
+    </div>
+  </div>
+
+  <!-- ================= SIDE VIEW ================= -->
+  <section>
+    <h2>측면도 &nbsp;Side view (X–Z)</h2>
+    <div class="viewwrap">
+    <svg viewBox="0 0 760 660" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="측면도">
+      <defs>
+        <marker id="ah" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 z" fill="#b8430f"/></marker>
+        <marker id="ah2" markerWidth="9" markerHeight="9" refX="0" refY="3" orient="auto"><path d="M8,0 L0,3 L8,6 z" fill="#b8430f"/></marker>
+        <pattern id="hatch" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse"><line x1="0" y1="0" x2="0" y2="7" stroke="#7b8b95" stroke-width="1.4"/></pattern>
+        <pattern id="hatchL" width="9" height="9" patternTransform="rotate(45)" patternUnits="userSpaceOnUse"><line x1="0" y1="0" x2="0" y2="9" stroke="#9aabb5" stroke-width="1"/></pattern>
+      </defs>
+      <style>
+        .o{fill:none;stroke:#0e1a24;stroke-width:1.8}
+        .th{fill:none;stroke:#0e1a24;stroke-width:2.6}
+        .cl{stroke:#3c525f;stroke-width:.9;stroke-dasharray:14 4 2 4}
+        .dl{stroke:#b8430f;stroke-width:1;fill:none}
+        .ext{stroke:#b8430f;stroke-width:.8;stroke-dasharray:3 2}
+        .dt{font-family:'IBM Plex Mono',monospace;font-size:12px;fill:#b8430f;font-weight:600}
+        .key{font-family:'IBM Plex Mono',monospace;font-size:13.5px;fill:#b8430f;font-weight:600}
+        .lb{font-family:'IBM Plex Mono',monospace;font-size:11.5px;fill:#0e1a24}
+        .lb2{font-family:'IBM Plex Mono',monospace;font-size:10.5px;fill:#3c525f}
+      </style>
+
+      <!-- ground -->
+      <line x1="40" y1="600" x2="730" y2="600" stroke="#0e1a24" stroke-width="2.4"/>
+      <rect x="40" y="601" width="690" height="10" fill="url(#hatchL)" opacity=".9"/>
+      <text class="lb2" x="44" y="626">FLOOR  z = 0</text>
+
+      <!-- pedestal 860 -->
+      <rect class="o" x="158" y="256" width="84" height="344" fill="url(#hatchL)"/>
+      <text class="lb" x="200" y="440" text-anchor="middle" transform="rotate(-90 200 440)">지지대 860 (210×210 가정)</text>
+
+      <!-- plate 210x210x10 -->
+      <rect class="th" x="158" y="252" width="84" height="4" fill="#c8d2d8"/>
+      <line class="dl" x1="152" y1="254" x2="112" y2="230"/>
+      <text class="lb" x="108" y="226" text-anchor="end">플레이트 210×210×10</text>
+
+      <!-- robot base + arm (schematic) -->
+      <rect class="o" x="170" y="204" width="60" height="48" fill="#c9d6de"/>
+      <circle class="o" cx="200" cy="194" r="24" fill="#dbe5ea"/>
+      <path class="th" d="M200,194 L250,86" stroke-linecap="round" stroke-width="13" stroke="#31586f"/>
+      <path class="th" d="M250,86 L384,166" stroke-linecap="round" stroke-width="11" stroke="#31586f"/>
+      <path class="th" d="M384,166 L400,218" stroke-linecap="round" stroke-width="8" stroke="#31586f"/>
+      <circle class="o" cx="250" cy="86" r="11" fill="#dbe5ea"/>
+      <circle class="o" cx="384" cy="166" r="9" fill="#dbe5ea"/>
+      <text class="lb" x="264" y="70">UR5e (개략도)</text>
+      <line x1="400" y1="218" x2="400" y2="267" stroke="#31586f" stroke-width="1" stroke-dasharray="4 3"/>
+      <text class="lb2" x="406" y="238">TCP</text>
+
+      <!-- base center line -->
+      <line class="cl" x1="200" y1="56" x2="200" y2="620"/>
+      <text class="lb2" x="186" y="640" text-anchor="middle">베이스 중심 X=0</text>
+
+      <!-- workspace slab : 210 | 250 .. 750 | 790 -->
+      <rect x="284" y="267" width="16" height="12" fill="url(#hatch)" stroke="#0e1a24" stroke-width="1.8"/>
+      <rect x="300" y="267" width="200" height="12" fill="#cfe6e2" stroke="#0e1a24" stroke-width="1.8"/>
+      <rect x="500" y="267" width="16" height="12" fill="url(#hatch)" stroke="#0e1a24" stroke-width="1.8"/>
+      <line x1="300" y1="267" x2="500" y2="267" stroke="#0f7a6e" stroke-width="3"/>
+      <text class="lb" x="400" y="302" text-anchor="middle" fill="#0f7a6e">실제 workspace 상면</text>
+      <rect class="o" x="286" y="279" width="14" height="321" fill="url(#hatchL)"/>
+      <rect class="o" x="500" y="279" width="14" height="321" fill="url(#hatchL)"/>
+
+      <!-- KEY DIM: 210 base center -> workspace edge -->
+      <line class="ext" x1="284" y1="267" x2="284" y2="196"/>
+      <line class="dl" x1="200" y1="212" x2="284" y2="212" marker-start="url(#ah2)" marker-end="url(#ah)"/>
+      <rect x="212" y="192" width="60" height="18" fill="#f4f7f8" stroke="#b8430f" stroke-width="1"/>
+      <text class="key" x="242" y="205" text-anchor="middle">210</text>
+      <text class="lb2" x="242" y="182" text-anchor="middle">베이스 중심 → workspace 끝단</text>
+
+      <!-- DIM: 40 / 500 / 40 -->
+      <g>
+        <line class="ext" x1="284" y1="279" x2="284" y2="338"/>
+        <line class="ext" x1="300" y1="279" x2="300" y2="338"/>
+        <line class="ext" x1="500" y1="279" x2="500" y2="338"/>
+        <line class="ext" x1="516" y1="267" x2="516" y2="338"/>
+        <line class="dl" x1="284" y1="330" x2="300" y2="330" marker-end="url(#ah)"/>
+        <line class="dl" x1="300" y1="330" x2="500" y2="330" marker-start="url(#ah2)" marker-end="url(#ah)"/>
+        <line class="dl" x1="500" y1="330" x2="516" y2="330" marker-start="url(#ah2)"/>
+        <rect x="378" y="318" width="44" height="15" fill="#f4f7f8"/>
+        <text class="dt" x="400" y="330" text-anchor="middle">500</text>
+        <text class="dt" x="278" y="352" text-anchor="middle">40</text>
+        <text class="dt" x="522" y="352" text-anchor="middle">40</text>
+        <line class="dl" x1="284" y1="368" x2="516" y2="368" marker-start="url(#ah2)" marker-end="url(#ah)"/>
+        <rect x="378" y="356" width="44" height="15" fill="#f4f7f8"/>
+        <text class="dt" x="400" y="368" text-anchor="middle">580</text>
+      </g>
+      <line class="ext" x1="300" y1="279" x2="300" y2="392"/>
+      <line class="dl" x1="200" y1="392" x2="300" y2="392" marker-start="url(#ah2)" marker-end="url(#ah)"/>
+      <rect x="222" y="384" width="56" height="15" fill="#f4f7f8"/>
+      <text class="dt" x="250" y="396" text-anchor="middle">250</text>
+      <text class="lb2" x="308" y="396">← 실제 workspace 시작</text>
+
+      <!-- KEY DIM: 37.5 height difference -->
+      <line class="ext" x1="242" y1="254" x2="648" y2="254"/>
+      <line class="ext" x1="516" y1="267" x2="648" y2="267"/>
+      <line class="dl" x1="608" y1="228" x2="608" y2="252" marker-end="url(#ah)"/>
+      <line class="dl" x1="608" y1="294" x2="608" y2="267" marker-end="url(#ah)"/>
+      <rect x="576" y="256" width="66" height="18" fill="#f4f7f8" stroke="#b8430f" stroke-width="1"/>
+      <text class="key" x="609" y="269" text-anchor="middle">↓ 37.5</text>
+      <text class="lb2" x="576" y="222">베이스 장착면(Z=0) 기준</text>
+      <text class="lb2" x="576" y="308">workspace 상면 Z = −37.5</text>
+
+      <!-- DIM: 870 / 860 / 832.5 -->
+      <line class="ext" x1="158" y1="256" x2="72" y2="256"/>
+      <line class="dl" x1="86" y1="256" x2="86" y2="600" marker-start="url(#ah2)" marker-end="url(#ah)"/>
+      <text class="dt" x="80" y="430" text-anchor="end" transform="rotate(-90 80 430)">860</text>
+      <line class="ext" x1="158" y1="252" x2="46" y2="252"/>
+      <line class="dl" x1="52" y1="252" x2="52" y2="600" marker-start="url(#ah2)" marker-end="url(#ah)"/>
+      <text class="dt" x="46" y="420" text-anchor="end" transform="rotate(-90 46 420)">870  베이스 장착면</text>
+      <line class="dl" x1="700" y1="267" x2="700" y2="600" marker-start="url(#ah2)" marker-end="url(#ah)"/>
+      <text class="dt" x="694" y="440" text-anchor="middle" transform="rotate(-90 694 440)">832.5</text>
+
+      <!-- clearance (derived) -->
+      <line class="ext" x1="242" y1="256" x2="242" y2="446"/>
+      <line class="ext" x1="284" y1="279" x2="284" y2="446"/>
+      <line class="dl" x1="242" y1="436" x2="284" y2="436" marker-start="url(#ah2)" marker-end="url(#ah)"/>
+      <text class="lb2" x="263" y="458" text-anchor="middle">간극 105</text>
+      <text class="lb2" x="263" y="470" text-anchor="middle">(지지대 가정치에서 계산)</text>
+
+      <g transform="translate(64,660)">
+        <line x1="0" y1="-40" x2="34" y2="-40" stroke="#0e1a24" stroke-width="1.6" marker-end="url(#ah)"/>
+        <line x1="0" y1="-40" x2="0" y2="-74" stroke="#0e1a24" stroke-width="1.6" marker-end="url(#ah)"/>
+        <text class="lb" x="38" y="-36">+X</text><text class="lb" x="-4" y="-80">+Z</text>
+      </g>
+    </svg>
+    </div>
+    <div class="legend">
+      <span><i style="background:#dbe5ea"></i>UR5e / 마운트</span>
+      <span><i style="background:#c8d2d8"></i>플레이트 210×210×10</span>
+      <span><i style="background:#cfe6e2"></i>실제 workspace 500×1170</span>
+      <span><i style="background:#7b8b95"></i>철제 프로파일 40</span>
+      <span><i style="border-color:#b8430f;background:#fff"></i>치수선 (mm)</span>
+    </div>
+  </section>
+
+  <!-- ================= TOP VIEW ================= -->
+  <section>
+    <h2>평면도 &nbsp;Top view (X–Y)</h2>
+    <div class="viewwrap">
+    <svg viewBox="0 0 760 620" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="평면도">
+      <defs>
+        <marker id="ahT" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 z" fill="#b8430f"/></marker>
+        <marker id="ah2T" markerWidth="9" markerHeight="9" refX="0" refY="3" orient="auto"><path d="M8,0 L0,3 L8,6 z" fill="#b8430f"/></marker>
+        <pattern id="hatchT" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse"><line x1="0" y1="0" x2="0" y2="7" stroke="#7b8b95" stroke-width="1.4"/></pattern>
+      </defs>
+      <style>
+        .o{fill:none;stroke:#0e1a24;stroke-width:1.8}
+        .cl{stroke:#3c525f;stroke-width:.9;stroke-dasharray:14 4 2 4}
+        .dl{stroke:#b8430f;stroke-width:1;fill:none}
+        .ext{stroke:#b8430f;stroke-width:.8;stroke-dasharray:3 2}
+        .dt{font-family:'IBM Plex Mono',monospace;font-size:12px;fill:#b8430f;font-weight:600}
+        .key{font-family:'IBM Plex Mono',monospace;font-size:13.5px;fill:#b8430f;font-weight:600}
+        .lb{font-family:'IBM Plex Mono',monospace;font-size:11.5px;fill:#0e1a24}
+        .lb2{font-family:'IBM Plex Mono',monospace;font-size:10.5px;fill:#3c525f}
+      </style>
+
+      <line class="cl" x1="150" y1="300" x2="650" y2="300"/>
+      <line class="cl" x1="240" y1="70" x2="240" y2="560"/>
+
+      <!-- plate -->
+      <rect class="o" x="206.4" y="266.4" width="67.2" height="67.2" fill="#c8d2d8"/>
+      <circle class="o" cx="240" cy="300" r="24" fill="#dbe5ea"/>
+      <circle cx="240" cy="300" r="16" fill="none" stroke="#3c525f" stroke-width=".9" stroke-dasharray="5 3"/>
+      <text class="lb2" x="222" y="356" text-anchor="middle">베이스 플레이트</text>
+
+      <!-- frame 580 x 1250 : x 210..790 -->
+      <rect x="307.2" y="100" width="185.6" height="400" fill="url(#hatchT)" stroke="#0e1a24" stroke-width="1.8"/>
+      <rect x="320" y="112.8" width="160" height="374.4" fill="#cfe6e2" stroke="#0f7a6e" stroke-width="2.4"/>
+      <text class="lb" x="400" y="286" text-anchor="middle" fill="#0f7a6e">실제 workspace</text>
+      <text class="lb" x="400" y="304" text-anchor="middle" fill="#0f7a6e">500 × 1170</text>
+      <g stroke="#0f7a6e" stroke-width="1.2">
+        <line x1="390" y1="320" x2="410" y2="320"/><line x1="400" y1="310" x2="400" y2="330"/>
+      </g>
+      <text class="lb2" x="400" y="346" text-anchor="middle">중심 X +500</text>
+      <text class="lb2" x="400" y="92" text-anchor="middle">철제 프로파일 40 (4면 테두리)</text>
+
+      <!-- plate dims -->
+      <line class="ext" x1="206.4" y1="266.4" x2="150" y2="266.4"/>
+      <line class="ext" x1="206.4" y1="333.6" x2="150" y2="333.6"/>
+      <line class="dl" x1="164" y1="266.4" x2="164" y2="333.6" marker-start="url(#ah2T)" marker-end="url(#ahT)"/>
+      <text class="dt" x="158" y="300" text-anchor="middle" transform="rotate(-90 158 300)">210</text>
+      <line class="ext" x1="206.4" y1="266.4" x2="206.4" y2="222"/>
+      <line class="ext" x1="273.6" y1="266.4" x2="273.6" y2="222"/>
+      <line class="dl" x1="206.4" y1="234" x2="273.6" y2="234" marker-start="url(#ah2T)" marker-end="url(#ahT)"/>
+      <text class="dt" x="240" y="228" text-anchor="middle">210</text>
+
+      <!-- KEY DIM 210 : base center -> workspace edge -->
+      <line class="ext" x1="240" y1="300" x2="240" y2="560"/>
+      <line class="ext" x1="307.2" y1="500" x2="307.2" y2="586"/>
+      <line class="dl" x1="240" y1="552" x2="307.2" y2="552" marker-start="url(#ah2T)" marker-end="url(#ahT)"/>
+      <rect x="244" y="533" width="60" height="18" fill="#f4f7f8" stroke="#b8430f" stroke-width="1"/>
+      <text class="key" x="274" y="546" text-anchor="middle">210</text>
+
+      <!-- X dims -->
+      <line class="ext" x1="320" y1="487.2" x2="320" y2="524"/>
+      <line class="ext" x1="480" y1="487.2" x2="480" y2="524"/>
+      <line class="ext" x1="492.8" y1="500" x2="492.8" y2="586"/>
+      <line class="dl" x1="307.2" y1="516" x2="320" y2="516" marker-end="url(#ahT)"/>
+      <line class="dl" x1="320" y1="516" x2="480" y2="516" marker-start="url(#ah2T)" marker-end="url(#ahT)"/>
+      <line class="dl" x1="480" y1="516" x2="492.8" y2="516" marker-start="url(#ah2T)"/>
+      <rect x="378" y="504" width="44" height="15" fill="#f4f7f8"/>
+      <text class="dt" x="400" y="516" text-anchor="middle">500</text>
+      <text class="dt" x="301" y="538" text-anchor="middle">40</text>
+      <text class="dt" x="500" y="538" text-anchor="middle">40</text>
+      <line class="dl" x1="307.2" y1="578" x2="492.8" y2="578" marker-start="url(#ah2T)" marker-end="url(#ahT)"/>
+      <rect x="378" y="566" width="44" height="15" fill="#f4f7f8"/>
+      <text class="dt" x="400" y="578" text-anchor="middle">580</text>
+
+      <!-- Y dims right -->
+      <line class="ext" x1="480" y1="112.8" x2="552" y2="112.8"/>
+      <line class="ext" x1="480" y1="487.2" x2="552" y2="487.2"/>
+      <line class="ext" x1="492.8" y1="100" x2="612" y2="100"/>
+      <line class="ext" x1="492.8" y1="500" x2="612" y2="500"/>
+      <line class="dl" x1="540" y1="112.8" x2="540" y2="487.2" marker-start="url(#ah2T)" marker-end="url(#ahT)"/>
+      <rect x="526" y="292" width="16" height="46" fill="#f4f7f8"/>
+      <text class="dt" x="534" y="300" text-anchor="middle" transform="rotate(-90 534 300)">1170</text>
+      <line class="dl" x1="600" y1="100" x2="600" y2="500" marker-start="url(#ah2T)" marker-end="url(#ahT)"/>
+      <rect x="586" y="292" width="16" height="46" fill="#f4f7f8"/>
+      <text class="dt" x="594" y="300" text-anchor="middle" transform="rotate(-90 594 300)">1250</text>
+      <text class="lb2" x="618" y="300" transform="rotate(-90 618 300)" text-anchor="middle">Y 전체 길이</text>
+
+      <text class="lb2" x="240" y="600" text-anchor="middle">Y = 0 은 베이스 중심을 지나는 대칭축</text>
+      <text class="lb2" x="600" y="600" text-anchor="end">※ 이 뷰에는 높이차 37.5가 나타나지 않음 — 측면도 참조</text>
+
+      <g transform="translate(80,560)">
+        <line x1="0" y1="0" x2="34" y2="0" stroke="#0e1a24" stroke-width="1.6" marker-end="url(#ahT)"/>
+        <line x1="0" y1="0" x2="0" y2="-34" stroke="#0e1a24" stroke-width="1.6" marker-end="url(#ahT)"/>
+        <text class="lb" x="38" y="4">+X</text><text class="lb" x="-6" y="-40">+Y</text>
+      </g>
+    </svg>
+    </div>
+  </section>
+
+  <!-- ================= TABLE ================= -->
+  <section>
+    <h2>치수표 &nbsp;Dimensions (mm)</h2>
+    <table>
+      <thead><tr><th>항목</th><th>값</th><th>바닥 기준 높이</th><th>베이스 기준 좌표</th><th>출처</th></tr></thead>
+      <tbody>
+        <tr><td>지지대 높이</td><td class="n">860</td><td class="n">0 → 860</td><td class="n">Z −870 → −10</td><td class="src">지정</td></tr>
+        <tr><td>마운트 플레이트</td><td class="n">210 × 210 × 10</td><td class="n">860 → 870</td><td class="n">Z −10 → 0</td><td class="src">지정</td></tr>
+        <tr class="hi"><td>로봇 베이스 장착면 (원점)</td><td class="n">—</td><td class="n">870</td><td class="n">(0, 0, 0)</td><td class="src">계산</td></tr>
+        <tr class="hi"><td><b>베이스 중심 → workspace 끝단</b></td><td class="n">210</td><td class="n">—</td><td class="n">X = 210</td><td class="src">지정</td></tr>
+        <tr class="hi"><td><b>베이스 중심 → workspace 상면</b></td><td class="n">37.5 (아래)</td><td class="n">832.5</td><td class="n">Z = −37.5</td><td class="src">지정</td></tr>
+        <tr><td>프로파일 (근접측)</td><td class="n">40</td><td class="n">832.5</td><td class="n">X 210 → 250</td><td class="src">지정</td></tr>
+        <tr><td>실제 workspace</td><td class="n">500 × 1170</td><td class="n">832.5</td><td class="n">X 250 → 750 / Y −585 → 585</td><td class="src">계산</td></tr>
+        <tr><td>프로파일 (원거리측)</td><td class="n">40</td><td class="n">832.5</td><td class="n">X 750 → 790</td><td class="src">지정</td></tr>
+        <tr><td>프레임 전체</td><td class="n">580 × 1250</td><td class="n">832.5</td><td class="n">X 210 → 790 / Y −625 → 625</td><td class="src">지정</td></tr>
+        <tr><td>workspace 중심</td><td class="n">—</td><td class="n">832.5</td><td class="n">(500, 0, −37.5)</td><td class="src">계산</td></tr>
+        <tr><td>지지대 ↔ 프레임 간극</td><td class="n">105</td><td class="n">—</td><td class="n">X 105 → 210</td><td class="src">가정</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ================= SPEC BLOCK ================= -->
+  <section>
+    <h2>Claude Code 참조용 스펙 (mm, 베이스 좌표계)</h2>
+<pre><span class="c"># UR5e workcell — units: mm  (UR/ROS API는 m 단위이므로 1000으로 나눠 사용)</span>
+<span class="c"># origin = 로봇 베이스 장착면 중심 (플레이트 상면), 바닥 기준 870</span>
+<span class="c"># +X: 베이스 중심 → workspace 방향, +Z: 위쪽</span>
+<span class="k">units</span>: mm
+
+<span class="k">given</span>:                                <span class="c"># 사용자 지정 기준치수</span>
+  <span class="g">base_to_workspace_edge_x</span>: 210      <span class="c"># 베이스 중심 → workspace 끝단(프로파일 바깥면)</span>
+  <span class="g">base_to_workspace_surface_z</span>: -37.5 <span class="c"># workspace 상면이 베이스보다 37.5 낮음</span>
+
+<span class="k">robot</span>:
+  model: ur5e
+  base_mount_height_from_floor: 870    <span class="c"># 860 지지대 + 10 플레이트</span>
+  mount_plate: {size: [210, 210, 10], base_at: center}
+  pedestal: {height: 860, footprint: [210, 210]}   <span class="c"># footprint 가정</span>
+
+<span class="k">workspace</span>:
+  profile_width: 40
+  surface_z: -37.5                     <span class="c"># 바닥 기준 832.5</span>
+  frame_x: [210, 790]                  <span class="c"># 전체 580 (40+500+40)</span>
+  frame_y: [-625, 625]                 <span class="c"># 전체 1250 (40+1170+40)</span>
+  inner_x: [250, 750]                  <span class="c"># 실제 작업영역 500</span>
+  inner_y: [-585, 585]                 <span class="c"># 실제 작업영역 1170</span>
+  inner_size: [500, 1170]
+  center: [500, 0, -37.5]
+
+<span class="k">tcp_bounds_suggestion</span>:
+  x: [250, 750]
+  y: [-585, 585]
+  z: [-37.5, 400]                      <span class="c"># 하한 = 작업면, 상한은 태스크에 맞게 조정</span>
+</pre>
+  </section>
+
+  <!-- ================= NOTES ================= -->
+  <section>
+    <h2>해석 및 가정 &nbsp;Assumptions</h2>
+    <ol class="notes">
+      <li><b>210 = 끝단까지</b> — 베이스 중심에서 workspace <b>끝단</b>(근접측 프로파일 바깥면)까지의 수평거리로 확정 반영했습니다. 따라서 프로파일이 X 210~250, 실제 작업영역은 X 250~750입니다.</li>
+      <li><b>37.5 = 높이차</b> — 베이스 장착면(Z=0, 바닥 +870)보다 workspace 상면이 37.5 <b>낮습니다</b>. 즉 workspace 상면 Z = −37.5, 바닥 기준 832.5.</li>
+      <li><b>간극 105는 계산값</b> — 지지대 단면을 플레이트와 같은 210×210으로 <b>가정</b>했을 때 지지대 바깥면(X 105)과 workspace 끝단(X 210) 사이에 생기는 여유입니다. 지지대 실제 폭이 420을 넘으면 workspace와 간섭합니다.</li>
+      <li><b>Y 1250</b> — 프로파일 포함 전체 길이로 해석해 40+1170+40으로 나눴습니다. 1250이 안쪽 작업영역이라면 전체는 1330이 됩니다.</li>
+      <li><b>Y 대칭</b> — 베이스 중심을 지나는 X축에 대해 좌우 대칭(±625)으로 가정했습니다.</li>
+      <li><b>프로파일 높이</b> — 프로파일 상면이 작업면과 같은 평면이라고 가정했습니다. 40 높이로 솟은 테두리라면 측면도 수정이 필요합니다.</li>
+    </ol>
+  </section>
+
+  <div class="titleblock">
+    <div><span>Drawing</span>UR5e Workcell Layout</div>
+    <div><span>Units</span>millimeter (mm)</div>
+    <div><span>Origin</span>Base mount face</div>
+    <div><span>Rev</span>C — edge-referenced 210</div>
+  </div>
+
+</div>
+</body>
+</html>

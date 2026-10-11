@@ -1,0 +1,64 @@
+# =====================================================================
+# CI — sim/HW 없이 도는 순수 pytest·자산·패키징 계약 자동 실행.
+# tests/ 는 common/ + real/ 의 순수 수학만 검증한다. Isaac Lab·ur_rtde·
+# pyrealsense2 는 지연(lazy) import 라 CI 에 불필요 → 최소 의존성
+# (numpy / pyyaml / pytest / torch-CPU)만 설치해 빠르고 안정적으로 돈다.
+# =====================================================================
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# 동일 브랜치의 이전 실행은 취소 (최신 커밋만 검증)
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pytest:
+    name: pure pytest (no Isaac / no hardware)
+    runs-on: ubuntu-latest   # 저장소 루트 = 프로젝트 루트 (tests/ 가 루트 바로 아래)
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11.15
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11.15"
+
+      - name: Install test deps (Isaac/SDK 불필요 — 순수 로직만)
+        run: |
+          python -m pip install pip==25.3 setuptools==81.0.0 wheel==0.45.1 packaging==23.0
+          python -m pip install torch==2.7.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install numpy==1.26.0 pyyaml==6.0.3 pytest==9.1.1 gymnasium==1.2.1 toml==0.10.2 build==1.3.0 pandas==3.0.3 matplotlib==3.10.3 psutil==5.9.8 openpyxl==3.1.5
+
+      # Markdown 정책(F97 허용 집합)은 아래 validate_repository.py가 강제한다
+      - name: Parse and audit the complete repository tree
+        run: python scripts/validate_repository.py
+
+      - name: Static training preflight
+        run: python scripts/preflight_training.py --static
+
+      - name: Build and inspect extension wheel
+        shell: bash
+        run: |
+          python -m build --wheel --no-isolation source/ur5e_binpick
+          python -m pip install --no-deps source/ur5e_binpick/dist/*.whl
+          python - <<'PY'
+          from importlib.metadata import files, version
+          import gymnasium as gym
+          import ur5e_binpick
+
+          packaged = {str(path) for path in files("ur5e_binpick") or []}
+          assert version("ur5e_binpick") == "0.1.0"
+          assert "ur5e_binpick/tasks/binpick/mdp/ur5e_assets.py" in packaged
+          assert "ur5e_binpick/tasks/binpick/agents/vision_policy.py" in packaged
+          assert gym.spec("Isaac-BinPick-UR5e-Teacher-v0") is not None
+          PY
+
+      - name: Run pure pytest (tests/)
+        run: pytest tests/ -v

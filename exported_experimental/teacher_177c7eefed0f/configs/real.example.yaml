@@ -1,0 +1,128 @@
+# =====================================================================
+# real.example.yaml — fail-closed 실기 설정 템플릿.
+# 이 파일을 configs/real.local.yaml로 복사한 뒤 실측값과 evidence 경로를 채운다.
+# real.local.yaml은 gitignore 대상이며 모든 실기/캘리브레이션 명령에서 --real-config로
+# 명시해야 한다. 이 예제 자체로는 readiness가 절대 열리지 않는다.
+# =====================================================================
+
+robot:
+  ip: ""                      # 필수: 배포 셀 UR 컨트롤러 IPv4/hostname
+  # servoJ 파라미터 — ⚠️ ur_rtde 정확한 시그니처/안전 범위 미확정 (스캐폴딩 시점):
+  # RTDEControlInterface.servoJ(q, speed, accel, time, lookahead_time, gain) 추정.
+  # 공식 문서 확인 후 real/real_robot.py TODO 해소할 것.
+  servoj_lookahead_time: 0.1
+  servoj_gain: 300
+  rtde_frequency_hz: 500.0    # UR e-Series ur_rtde 1.6.2 receive/control rate
+  movej_timeout_s: 30.0
+  # Receive-only HIL requires powered/idle/normal state and no running program.
+  expected_robot_mode: 7
+  expected_safety_mode: 1
+  no_motion_runtime_states: [1]
+  controller_version: ""      # 필수: RTDE getControllerVersion exact dotted version
+  # ★★2026-07-28 base frame 정합(감사 C-2) — 실기 배포 차단 해소★★
+  #   URDF가 명시: base_link-base_fixed_joint rpy=(0,0,π) = "UR 컨트롤러 Base와 정렬하기 위한
+  #   z축 180° 회전". sim tcp_pose는 base_link 기준인데 RTDE getActualTCPPose()는 컨트롤러
+  #   Base 기준이라, 변환 없이 쓰면 ★x·y 부호가 반대★가 되어 정책이 거울상 좌표를 받는다.
+  #   ur_base   = RTDE가 컨트롤러 Base로 보고한다고 보고 Rz(π)를 적용(★기본값 — URDF 근거★)
+  #   base_link = RTDE가 이미 base_link 기준이라 변환 불필요
+  #   ⚠️ ★실기 첫 세션에서 반드시 실측 확인★: 홈 자세 getActualTCPPose() vs sim FK
+  #      (신 홈 파지중심 = (0.3012, 0.1328, 0.5249)). 부호가 맞으면 base_link로 바꿀 것.
+  tcp_frame_convention: ur_base
+  # controller TCP=flange(0 offset), base-frame round-trip, servoL dry-run 검증 후에만 true.
+  tcp_command_verified: false
+  # ★2026-07-28 홈 교체(robot_spec.py UR5E_HOME_JOINT_POS와 ★값 동기 필수★)★:
+  #   손목 카메라가 작업면을 보도록 사용자 GUI로 확정 — 가시율 27.1% → 100%(스폰·타겟존 모두).
+  #   ⚠️ 실기 홈 이동은 저속으로, 주변 간섭 확인 후 수행할 것(TCP가 벨트 위 52cm에 위치).
+  # ★2026-07-28(2차) 배치 180°★ — shoulder_pan 0 → π (로봇이 벨트를 등지고 서는 실셀 배치).
+  #   robot_spec.UR5E_HOME_JOINT_POS와 ★반드시 동일★ (tests/test_home_pose_contract.py가 강제).
+  # ★2026-08-30 실기 실측 확정★ (0/-76/-103/-96/+93/+4 deg) — common/robot_spec.py와 동기
+  home_joints_rad: [0.0, -1.3265, -1.7977, -1.6755, 1.6232, 0.0698]
+
+gripper:
+  # ★★2026-08-12 채널 확정 — README에 보존한 실기 실측 세션★★
+  #   2FG7은 이 셋업에서 Compute Box(XML-RPC :41414 / Modbus :502)도 URCap도 쓰지 않는다
+  #   (포트스캔·URScript probe로 부재 확인). 제어 = ★로봇 컨트롤러 표준 디지털 출력 펄스★,
+  #   팔과 같은 real.local.yaml의 RTDE 연결을 공유한다. 전제: 펜던트 Remote Control 모드.
+  #   힘·속도·폭은 프리셋 고정(DO 방식 한계) — 바꾸려면 Compute Box Web Client 필요.
+  #   ★clamp 시 5cm 큐브 파지 가능 — 사용자 확인(2026-08-12)★.
+  driver: do_pulse
+  do_open: 6          # DO6 펄스 = 열기 (실측 확인)
+  do_close: 5         # DO5 펄스 = 닫기 (실측 확인)
+  pulse_s: 0.30       # 실측에서 정상 트리거 — 개폐가 씹히면 0.5로 상향 후 재검증
+  dispatch_ack_timeout_s: 0.040  # target-pin HIGH 성공을 20Hz 주기 안에 확인, 지연/queue는 fault
+  settle_s: 1.20      # 참고치. Student command-state 강제 계약값은 configs/common.yaml이 단일 소스다.
+  # ⚠️★안전 계약★: DO0(항상 ON·용도 미확인)·DO1~4·DO7은 절대 건드리지 말 것 —
+  #   툴 체인저 잠금이 섞여 있으면 그리퍼 낙하. 코드는 do_open/do_close 두 핀만 만지며,
+  #   RealRobot 생성자가 핀이 실측 매핑 {5,6}이 아니면 기동을 거부한다(fail-closed).
+  # ★★2026-08-12 legacy 세션 관찰 — 현 release의 command/motion 승인이 아님★★
+  #   당시 로컬 산출: deployment/evidence/gripper_2fg7_<timestamp>/report.json + report.txt
+  #   · 개폐 7회(3사이클+마무리 열림) 전부 성공 · 안전 판정 7/7
+  #   · ★개폐 중 관절 불변 max|Δq| = 0.000062 rad★ (기준 1e-3, legacy 실측 노이즈 5.7e-05)
+  #     ⇒ DO 펄스가 팔 모션을 유발하지 않음이 우리 코드 경로에서 확인됐다.
+  #   ⚠️1회차에서 ★첫 호출만 817.9 ms★ 블로킹(이후 0.3 ms) — 펄스 경로의 RTDEIOInterface
+  #     지연 연결이 원인이었고 `real_robot.py`가 ★연결 시점 초기화★로 수정됨. 그 수정 자체는
+  #     ★게이트 재실행 또는 DryRun에서 재확인★한다(첫 호출도 ms 단위여야 정상).
+  driver_verified: false       # deprecated: readiness는 evidence 파일을 검증한다
+  # 이 배선에는 폭·파지 피드백이 존재하지 않는다(전 채널 실측: AI0 미연결·레지스터 0,
+  # DI0=명령 에코). Student는 별도의 gripper_command_state를 사용하지만 그것은 실제 폭
+  # evidence가 아니다. 이 플래그는 측정 가능한 실제 width/grip 채널과 검증 evidence가
+  # 생긴 경우에만 true가 될 수 있으며, false인 동안 final readiness/motion은 계속 차단된다.
+  width_feedback_verified: false
+
+camera:
+  # D435i — ★eye-in-hand(손목 장착, 2026-07-14 사용자 확정)★: 플랜지 브래킷에 장착되어
+  #   로봇과 함께 움직인다. extrinsic = configs/calib/hand_eye.yaml T_flange_cam
+  #   (flange→COLOR optical). base 기준 카메라 포즈는 로봇 포즈에 의존 —
+  #   T_base_cam = T_base_flange @ T_flange_cam.
+  # ★RGB-D 스위치는 여기 없음(의도적)★: RealCamera(enable_rgb=...)는 배포/테스트
+  #   코드가 configs/common.yaml preprocess.use_rgb(=PreprocessCfg.use_rgb)를 그대로
+  #   넘겨 켠다 — 관측 계약(obs_layout)과 카메라 스트림 구성이 어긋나지 않도록
+  #   단일 소스 유지. real.local.yaml에 enable_rgb 중복 키를 추가하지 말 것.
+  #   enable_rgb=true 경로: color 848x480@fps(rgb8) + rs.align(depth→color) —
+  #   정렬 후 유효 intrinsics = color 스트림 (hand_eye v7 캘리브와 같은 기준).
+  serial: ""                  # 필수: D435i serial. 첫 장치 자동 선택은 배포에서 금지
+  firmware_version: ""        # 필수: librealsense firmware_version exact match
+  width: 848
+  height: 480
+  fps: 30
+  frame_timeout_ms: 100      # 20 Hz 제어주기 2회 이내; 초과 시 rollout trip
+  # no-motion 증빙은 host epoch frame timestamp와 backlog 없는 최신 프레임만 허용.
+  # RealCamera가 두 librealsense option을 설정하고 readback까지 검사한다.
+  global_time_enabled: true
+  frames_queue_size: 1
+  # ⚠️ 미결정(프로젝트 차원 결정 필요): 필터 체인 on/off.
+  #   off → sim이 raw 노이즈를 DR로 모사 (현재 dr.yaml 가정)
+  #   on  → sim이 "필터 후" 분포를 모사해야 함 (dr.yaml 재조정 필요)
+  # 결정 근거는 deployment/Verify_ObsParity.py 결과로 만든다.
+  enable_filters: false
+
+latency:
+  # 요소2와 연동: dr.yaml의 지연 범위가 검증된 실측값을 덮어야 한다.
+  # obs 지연은 검증된 공통 acquisition clock 기반 evidence에서 파생해야 하며 수기
+  # 추정값을 넣지 않는다. 현 no-motion 결과는 timestamp_sync_unverified diagnostic일
+  # 뿐 evidence가 아니므로 obs/action 모두 별도 collector 전까지 null인 P0 상태다.
+  measured_obs_delay_ms: null
+  measured_action_delay_ms: null
+
+# 각 항목은 {path, sha256}이다. path는 이 real config 파일 기준 상대경로 또는 절대경로.
+# 증거 JSON은 schema_version=1, kind, passed=true, contract_sha256, recorded_at,
+# valid_until, measurements를 포함해야 한다. contract_sha256는 evidence 섹션을 제외한
+# 이 파일의 실기 계약 해시이며 deployment/verify_deployment.py가 계산/검증한다.
+# sha256는 증거 파일 자체의 전체 64자리 SHA-256. 빈 값/누락/만료/종류 불일치는 모두 차단.
+evidence:
+  tcp_command: {path: "", sha256: ""}
+  tcp_offset: {path: "", sha256: ""}
+  hand_eye: {path: "", sha256: ""}
+  scene_registration: {path: "", sha256: ""}
+  camera_stream: {path: "", sha256: ""}
+  joint_parity: {path: "", sha256: ""}
+  latency: {path: "", sha256: ""}
+  force_feedback: {path: "", sha256: ""}
+  emergency_stop: {path: "", sha256: ""}
+  workspace: {path: "", sha256: ""}
+  motion_safety: {path: "", sha256: ""}
+  # 현 release는 timestamp_sync_unverified라 diagnostic만 생성하며 이 evidence는 비워 둔다.
+  no_motion: {path: "", sha256: ""}
+  firmware_inventory: {path: "", sha256: ""}
+  gripper_driver: {path: "", sha256: ""}
+  gripper_width: {path: "", sha256: ""}

@@ -1,0 +1,64 @@
+#usda 1.0
+(
+    doc = """workspace.usd에서 ★Table만★ 남긴 변형 (2026-08-09, 사용자 지시).
+
+    원본 `workspace.usd`(visual_servoing_handoff 반입본)는 다음 4개를 담고 있다:
+      /World/Table          → sim_assets/table_conveyor_scene.usd 참조 (작업대+컨베이어)
+      /World/Giant_casting  → sim_assets/cad/clutch_disk.usdz 참조    ← ★제외★
+      /World/Light          → DomeLight                               ← 제외(씬 조명은 scene.py 담당)
+      /World/collisions     → 빈 Scope                                ← 제외
+      /physicsScene         → PhysicsScene                            ← 제외(Isaac Lab이 자체 생성)
+
+    이 파일은 Table 하나만 참조하고, 참조 자산 안에 들어 있는 조명·PhysicsScene을
+    override로 비활성화한다 — Isaac Lab 씬에 자산으로 얹을 때 중복 PhysicsScene·
+    중복 조명이 들어가면 물리 설정과 렌더가 어긋나기 때문이다.
+
+    ⚠️ 참조 대상 `sim_assets/table_conveyor_scene.usd`(22.6MB)는 대용량이라 .gitignore 대상이다.
+       출처·복사 정책은 저장소 루트 README의 "자산, 생성물, 출처" 참조.
+    ⚠️ Table 원점 기준 AABB: x[-1.02, 0.783] · y[-2.652, 1.598] · z[0, 2.0](조명 포함).
+       table_instanceable의 상면은 자산 로컬 z≈0.8702 — 학습 씬에 얹으려면 로봇 base와
+       벨트 상면(TABLE_HEIGHT)에 맞추는 배치 변환이 별도로 필요하다(미결정).
+    """
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "World"
+{
+    def Xform "Table"
+    {
+        float3 xformOp:scale = (1, 1, 1)
+        # ★원본 workspace.usd의 /World/Table 자세를 그대로 승계★ (real, i, j, k) =
+        #   (0,0,0,1) = Z축 180° 회전. 항등으로 두면 x·y가 좌우 반전돼 배치가 어긋난다.
+        quatd xformOp:orient = (0, 0, 0, 1)
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+        def Xform "Asset" (
+            prepend references = @./sim_assets/table_conveyor_scene.usd@
+        )
+        {
+            # 참조 자산 내부의 조명·물리씬 비활성화 (씬 소유권은 Isaac Lab / scene.py).
+            over "RectLight" (active = false)
+            {
+            }
+
+            over "DomeLight" (active = false)
+            {
+            }
+
+            over "PhysicsScene" (active = false)
+            {
+            }
+
+            # ★2026-08-10 사용자 지시★ — 자산에는 테이블이 ★2개★ 들어 있다:
+            #   Shop_Table         0.653 x ★4.250★ x 0.827 m  = '기다란' 벤치 → ★제외★
+            #   table_instanceable 0.974 x 1.151 x ★0.870★ m  = 작업대 본체 → 사용
+            #   (0.870은 도면의 base 장착 높이 0.87과 정확히 일치)
+            over "Shop_Table" (active = false)
+            {
+            }
+        }
+    }
+}

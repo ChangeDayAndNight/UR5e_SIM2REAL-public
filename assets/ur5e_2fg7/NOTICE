@@ -1,0 +1,29 @@
+UR5e + OnRobot 2FG7 결합(combined) 자산 — 구성요소 출처/라이선스.
+
+■ UR5e 팔 (URDF + 메시)
+  - URDF: ros-industrial `ur_description` 의 ur5e (xacro를 평탄화한 plain URDF).
+    경유: github.com/Daniella1/urdf_files_dataset
+          (urdf_files/ros-industrial/xacro_generated/universal_robots/ur_description/urdf/ur5e.urdf)
+    데이터셋 라이선스: MIT — Copyright (c) 2023 Daniella Tola
+    라이선스 원문 확인 commit: 81f4cdac42c3a51ba88833180db5bf3697988c87
+    라이선스 전문: LICENSE-URDF-Dataset-MIT.txt
+  - 메시(meshes/ur5e/): github.com/UniversalRobots/Universal_Robots_ROS2_Description
+    라이선스 원문 확인 commit: 89bbe795f38a7ab00fb66fe8831dfff79dc99edf
+  - 라이선스: BSD-3-Clause (Universal Robots A/S / ROS-Industrial).
+    ※ UR5e 메시는 BSD-3 대상(UR20 메시만 별도 제약 — 본 프로젝트 미사용).
+  - 라이선스 전문: LICENSE-BSD-3-Clause.txt
+
+■ OnRobot 2FG7 그리퍼 (URDF + 메시, meshes/onrobot_2fg7/)
+  - github.com/juandpenan/onrobot_2FG7_gripper_description
+    라이선스 원문 확인 commit: 0fdc88a0378c376cb5e576a12a03bf8fa918ccc2
+  - 라이선스: MIT — Copyright (c) 2018 Toshinori Kitamura
+  - 라이선스 전문: LICENSE-OnRobot-MIT.txt
+  - 독립 자산 상세: ../onrobot_2fg7/NOTICE
+
+■ 결합물 (ur5e_2fg7.urdf)
+  - 위 UR5e URDF의 mesh 경로를 상대경로로 바꾸고 <transmission> 제거,
+    UR5e `tool0` 프레임에 2FG7 base_link(→onrobot_base_link 리네임)를 fixed joint로
+    결합한 파생물. 링크 좌표·관절 limit·mimic은 원본 보존.
+  - 재현: 저장소 루트 README의 "자산, 생성물, 출처"와 변환 명령 참조.
+  - 배포 번들은 이 NOTICE, 독립 2FG7 NOTICE, 위 세 라이선스 전문, 저장소 루트
+    LICENSE를 함께 복사하고 bundle_manifest.json의 SHA-256으로 무결성을 검증한다.

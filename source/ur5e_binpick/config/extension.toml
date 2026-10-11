@@ -1,0 +1,22 @@
+[package]
+
+# Semantic Versioning: https://semver.org/
+version = "0.1.0"
+
+category = "isaaclab"
+
+title = "UR5e Bin Picking"
+author = "ChangeDayAndNight"
+maintainer = "ChangeDayAndNight"
+description = "UR5e depth-vision bin-picking tasks (teacher/vision) for Isaac Lab — Sim2Real."
+repository = "https://github.com/ChangeDayAndNight/UR5e_SIM2REAL-public.git"
+keywords = ["extension", "isaaclab", "ur5e", "bin-picking", "sim2real", "rsl_rl"]
+
+[dependencies]
+"isaaclab" = {}
+"isaaclab_assets" = {}
+"isaaclab_rl" = {}
+"isaaclab_tasks" = {}
+
+[[python.module]]
+name = "ur5e_binpick"

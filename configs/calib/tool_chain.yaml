@@ -1,0 +1,81 @@
+# =====================================================================
+# tool_chain.yaml — ★플랜지→파지중심 기구학 체인 (요소4 단일 소스)★
+#
+# 신설 근거(2026-07-30 사용자 제공): 실기 툴 체인이 5단임이 확인됐다.
+#   UR5e flange → tool flange → magbot TCW1 → ★OnRobot QC-RS v3★ → OnRobot 2FG7
+# 구 sim URDF는 ★3단(tool0 → TCW1 → 2FG7)★이라 ★tool flange와 QC-RS v3 두 단이 누락★돼
+# tcp_offset이 16.3mm 짧았다. ★2026-07-30 해소★ — 사용자 총장 실측(tool0→그리퍼끝 265mm)으로
+# 두 단을 URDF에 명시 추가하고 tcp_offset을 0.2262 → 0.2425로 갱신했다.
+# 이 파일은 각 단의 출처·측정 여부를 남겨 같은 누락의 재발을 막는다.
+#
+# 사진 근거: Real_Environment/KakaoTalk_20260730_134326713_0{1,2,3,4}.jpg
+#   _01 = QC-RS v3 라벨(Item 109498 / IP67 / MAX 25kg)
+#   _02 = 2FG7 라벨(Item 106376 / 2023 / IP67 / 1.1kg / MAX 11kg), 파란 tool-side QC 부착됨
+#   _03 = 로봇 장착 상태(빨간 TCW1 → 실버 → 파란 QC → 2FG7)
+#   _04 = 분해 전체 체인 + 파란 큐브
+#
+# ⚠️이 파일은 ★기록·검증용★이다. 학습 env가 직접 소비하지 않는다 —
+#   실제 소비원은 assets/ur5e_2fg7/ur5e_tcw1_2fg7.urdf 의 joint origin과
+#   configs/calib/tcp_offset.yaml 이다. GUI(place_workspace_gui.py)가 이 파일을 읽어
+#   체인 합계와 tcp_offset의 불일치를 실시간으로 표시한다.
+# =====================================================================
+
+# 각 단: flange(tool0)에서 시작해 z+ 방향으로 쌓인다. 단위 m.
+elements:
+  - name: tool_flange_plate
+    height_m: 0.005          # ★5mm 두께 원판(D105) — 사용자 실측 2026-07-30★
+    diameter_m: 0.105
+    source: "사용자 실측 — TCW1 장착 전에 끼우는 5mm 두께 D105 원판"
+    measured: true
+    color: [0.62, 0.63, 0.66]
+
+  - name: magbot_TCW1
+    height_m: 0.0865         # 결합 스택 86.5mm
+    source: "magbot.kr 공식 스펙 (2026-07-15 반영)"
+    measured: true
+    color: [0.75, 0.18, 0.18]     # 실물 빨간 아노다이징(사진 _03/_04)
+
+  - name: onrobot_QC_RS_v3
+    height_m: 0.01125        # ★사용자 총장 실측(265mm)에서 역산 — 2026-07-30★
+    source: >
+      역산: tool0→그리퍼끝 265mm(사용자) → 파지중심 242.5mm(= 265 − pad전장45/2).
+      구 체인 226.25에서 부족분 16.25mm, 그중 tool flange 5.00을 빼면 QC = 11.25mm.
+    measured: true           # 직접 캘리퍼 실측은 아니지만 총장 실측에서 유일하게 결정된다
+    verify_hint: >
+      직접 확인법: TCW1 상면 ↔ 2FG7 하면 거리(결합 상태)가 11.25mm 근방인지.
+      어긋나면 이 값과 URDF qc_rs_v3_link 두께를 함께 갱신할 것.
+    color: [0.15, 0.45, 0.85]     # 실물 파란색(사진 _01)
+    note: >
+      2FG7 쪽에는 tool-side QC가 이미 부착돼 있다(사진 _02의 파란 디스크).
+      따라서 여기서 재야 할 것은 ★로봇측 QC-RS v3를 끼웠을 때 늘어나는 높이★다.
+      측정법: TCW1 상면에서 2FG7 하면까지의 거리(결합 상태). 또는
+      QC-RS v3 단품 두께 + 결합 시 겹침량을 함께 확인.
+
+  - name: onrobot_2FG7
+    # 파지중심(핑거 pad 중점)까지의 z. URDF: joint origin 0.12005 + pad origin 0.01970
+    height_to_grip_m: 0.13975
+    source: "URDF joint/collision origin (STL 정점 bound 검증) — 2FG7 base면 → pad 중점"
+    measured: true
+    color: [0.80, 0.82, 0.85]
+    note: >
+      2FG7 전장은 CAD 도면(2fg7.png) 기준 144mm. pad 중점은 base면에서 139.75mm.
+      핑거 개폐 규격은 ur5e_assets.py GRIPPER_* 상수가 단일 소스(열림 74 / 폐합 34mm).
+
+# ─────────────────────────────────────────────────────────────────────
+# 검증(tests/test_tool_chain.py가 자동 강제):
+#   0.005 + 0.0865 + 0.01125 + 0.13975 = ★0.24250★ == tcp_offset z 0.2425 ✓
+#   사용자 실측 대조: tool0→그리퍼끝 265mm − pad전장45/2 = 242.5mm ✓
+# ⚠️구 0.2262(두 단 누락)로 학습한 정책은 실기에서 ★16.3mm 낮게 집으려 한다★ —
+#   그 계보(teacher v3 등)는 이 정정 이전 값이므로 재학습 대상이다.
+# ─────────────────────────────────────────────────────────────────────
+verification:
+  expected_tcp_z_m: 0.2425             # 5단 합계 (사용자 실측 265mm 역산)
+  tcp_offset_yaml_z_m: 0.2425          # configs/calib/tcp_offset.yaml 현재값
+  user_measured_total_to_tip_mm: 265.0 # tool0 → 그리퍼 끝 (사용자, 2026-07-30)
+  qc_missing: false                     # ★2026-07-30 해소 — 5단 전부 URDF 반영★
+  action_required: >
+    ★완료(2026-07-30)★ ①URDF에 tool_flange_plate_link·qc_rs_v3_link 추가
+    ②USD 재생성 ③tcp_offset z 0.2262 → 0.2425 ④홈 FK·_PREGRASP_GRIP 재산출
+    남은 확인: QC-RS v3 11.25mm는 총장 265mm에서 ★역산★한 값이다 — 캘리퍼로
+    TCW1 상면↔2FG7 하면을 직접 재서 교차검증하면 더 확실하다(verify_hint 참조).
+    실기 캘리브(deployment/Calib_TcpOffset.py)로 최종 확정하면 meta.calibrated: true.

@@ -1,0 +1,37 @@
+# =====================================================================
+# nurec_landmarks.yaml — ★NuRec(Workplace.usdz) ↔ 로봇 base frame 대응점★
+#   register_nurec_umeyama.py 의 입력 (Umeyama similarity: p_base ≈ scale·R·p_nurec + t)
+#
+# 측정 방법 (각 쌍마다 같은 물리적 지점을 두 좌표계에서 잰다):
+#   - p_nurec: place_nurec_gui.py(또는 usdview)에서 해당 지점의 ★NuRec 원좌표★
+#       (= /World/NuRec 하위 프림 로컬 좌표 — 루트 xform 적용 ★전★ 값).
+#       GUI에서 읽으려면 /World/NuRec 변환을 항등으로 두고 커서 스냅 좌표를 기록.
+#   - p_base : 로봇 base frame 실측/공칭 [m]. 벨트 상면 = z 0, 벨트 중심 = (0.45, 0)
+#       (configs/sim.yaml scene.belt_size_m [0.50, 0.65, 0.04] 기준 모서리
+#        x ∈ {0.20, 0.70}, y ∈ {-0.325, +0.325}), 로봇 베이스 중심 = (0, 0, 0).
+#   - 권장 세트: 로봇 베이스 중심 1점 + 벨트 상면 모서리 4점 (비공선 5점, N≥3 필수).
+#
+# ⚠️ 아래 pairs 는 ★합성 예시★(meta.measured=false) — 알려진 similarity
+#   (scale=0.34, yaw=+25°, t=[0.31,-0.12,0.046])로 p_base 를 역변환해 만든 값이라
+#   dry-run 시 잔차 ~0 이 나오는 것이 정상이다. 실측 후 값을 교체하고
+#   meta.measured 를 true 로 바꿔야 --write 가 허용된다.
+pairs:
+- name: robot_base_center
+  p_nurec: [-0.6772, 0.7052, -0.1353]
+  p_base: [0.0, 0.0, 0.0]
+- name: belt_corner_rear_right    # 벨트 상면 모서리 (x-, y-)
+  p_nurec: [-0.5480, -0.4097, -0.1353]
+  p_base: [0.20, -0.325, 0.0]
+- name: belt_corner_rear_left     # 벨트 상면 모서리 (x-, y+)
+  p_nurec: [0.2599, 1.3229, -0.1353]
+  p_base: [0.20, 0.325, 0.0]
+- name: belt_corner_front_right   # 벨트 상면 모서리 (x+, y-)
+  p_nurec: [0.7848, -1.0312, -0.1353]
+  p_base: [0.70, -0.325, 0.0]
+- name: belt_corner_front_left    # 벨트 상면 모서리 (x+, y+)
+  p_nurec: [1.5927, 0.7014, -0.1353]
+  p_base: [0.70, 0.325, 0.0]
+meta:
+  measured: false      # ★실측값으로 교체 후 true★ — false 면 --write 거부(합성 예시 오염 방지)
+  date: null
+  notes: 2026-07-17 스캐폴딩 — 합성 예시(왕복 검증용). 실측 시 교체할 것.

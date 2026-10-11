@@ -1,0 +1,35 @@
+-c constraints-isaac51.txt
+
+# Isaac Lab core가 선언하지만 이 프로젝트의 RSL-RL 학습에 직접 필요한 패키지.
+# Isaac Sim/torch와 editable Isaac Lab 패키지는 bootstrap_training.ps1이 별도 설치한다.
+einops==0.8.2
+flatdict==4.0.1
+flaky==3.8.1
+gymnasium==1.2.1
+h5py==3.16.0
+hidapi==0.14.0.post2
+hydra-core==1.3.4
+junitparser==5.0.1
+moviepy==2.2.1
+matplotlib==3.10.3
+numba==0.59.1
+numpy==1.26.0
+onnx==1.21.0
+onnxscript==0.7.1
+openpyxl==3.1.5
+packaging==23.0
+pandas==2.2.3
+pillow==11.3.0
+prettytable==3.3.0
+protobuf==7.35.1
+pytest==9.1.1
+pytest-mock==3.15.1
+pyglet==1.5.31
+rsl-rl-lib==3.1.2
+starlette==0.45.3
+tensorboard==2.21.0
+tensordict==0.13.0
+toml==0.10.2
+transformers==4.57.6
+trimesh==4.5.1
+warp-lang==1.15.0

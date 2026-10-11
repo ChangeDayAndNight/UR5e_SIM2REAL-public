@@ -1,0 +1,24 @@
+=== Eye-in-hand hand-eye calibration (METHOD A) ===
+
+Board: 11x8 ChArUco, square 15mm, marker 11mm, DICT_4X4_50, LEGACY pattern
+Views used: 27   corners: 1890
+
+Intrinsics (FIXED): fx=888.39 fy=893.39 cx=622.47 cy=372.72
+  dist(k1,k2,p1,p2,k3)=[-0.00029, 0.73136, -0.00261, -0.00251, -2.58119]  (calib RMS 0.166px)
+
+T_EE_CAM (camera pose in the flange frame):
+[[ 0.999553 -0.025121  0.016205 -0.02253 ]
+ [ 0.0287    0.958078 -0.285065 -0.06977 ]
+ [-0.008365  0.285403  0.958371  0.018422]
+ [ 0.        0.        0.        1.      ]]
+
+camera offset from flange: [-22.53, -69.77, 18.42] mm, rotation 16.66 deg
+
+T_base_board (fixed board pose in robot base):
+[[-0.999665  0.02377  -0.01022  -0.052661]
+ [ 0.023881  0.999655 -0.010902 -0.651994]
+ [ 0.009958 -0.011143 -0.999888 -0.037247]
+ [ 0.        0.        0.        1.      ]]
+
+REPROJECTION ERROR:  RMS = 4.109 px = 2.010 mm  (working dist 0.435 m)
+  per-view mm: min 0.191 / median 1.008 / mean 1.544 / max 4.980

@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "stack": {
+    "isaac_sim": "5.1.0",
+    "isaac_lab": "2.3.2"
+  },
+  "bundled_assets": [
+    {
+      "path": "assets/ur5e_2fg7/ur5e_tcw1_2fg7.usd",
+      "size": 1463,
+      "sha256": "e0673bfccce1889f8122cba789564749d73dea691c11905b647fdc03d35ce541",
+      "required_for": ["teacher", "vision"]
+    },
+    {
+      "path": "assets/ur5e_2fg7/configuration/ur5e_tcw1_2fg7_base.usd",
+      "size": 8256964,
+      "sha256": "07b16d9f97709b30575d897cabaaf779eaea9b00280a4b1573ec00558f4323a8",
+      "required_for": ["teacher", "vision"]
+    },
+    {
+      "path": "assets/ur5e_2fg7/configuration/ur5e_tcw1_2fg7_physics.usd",
+      "size": 5138,
+      "sha256": "33553d05a08e2bc95ea8258a885a25c562f985574ccb058ee822ee959e90a081",
+      "required_for": ["teacher", "vision"]
+    },
+    {
+      "path": "assets/ur5e_2fg7/configuration/ur5e_tcw1_2fg7_robot.usd",
+      "size": 1816,
+      "sha256": "ee40e975fe62c031f3c102b72874607b4945652307ab2c8a11ea8fed9e282dcb",
+      "required_for": ["teacher", "vision"]
+    },
+    {
+      "path": "assets/ur5e_2fg7/configuration/ur5e_tcw1_2fg7_sensor.usd",
+      "size": 654,
+      "sha256": "581dd5fa79dc474c362d27763bcc2a28c8d72b509919921f8c5c48da77be4796",
+      "required_for": ["teacher", "vision"]
+    },
+    {
+      "path": "assets/d435i/d435i.usd",
+      "size": 16649900,
+      "sha256": "27e3769e5bab253d761916c43e7507bf653dcf13dba4941aa80cd60a009d64cc",
+      "required_for": ["vision"]
+    },
+    {
+      "path": "assets/d435i/Props/instanceable_meshes.usd",
+      "size": 16649948,
+      "sha256": "754fd67d9cc94bcf4939733179ab0572df8a2b12d30d13f8803ed760c3189af2",
+      "required_for": ["vision"]
+    }
+  ],
+  "optional_assets": [
+    {
+      "path": "assets/Scene/Workplace.usdz",
+      "source": "assets/Scene/Workplace.ply",
+      "provenance": "assets/Scene/Workplace.provenance.json",
+      "purpose": "NuRec fine-tuning only; all three ignored local files are hash-bound at runtime"
+    }
+  ],
+  "source_assets": [
+    {
+      "path": "assets/ur5e_2fg7/ur5e_tcw1_2fg7.urdf",
+      "size": 30323,
+      "sha256": "c788443db65f3bb32d9d628555dd22e367a64238fb1e984c3d74a8fa9686685e",
+      "generates": [
+        "assets/ur5e_2fg7/configuration/ur5e_tcw1_2fg7_base.usd",
+        "assets/ur5e_2fg7/configuration/ur5e_tcw1_2fg7_physics.usd"
+      ],
+      "note": "F93(T-04): URDF<->USD binding. Edit the URDF -> rerun scripts/tools/convert_2fg7_usd.py -> update the USD and URDF entries together."
+    }
+  ]
+}

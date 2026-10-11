@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UR5e Sim2Real Bin Picking</title>
+<meta name="description" content="UR5e · OnRobot 2FG7 · RealSense D435i 비전 빈 피킹 — Isaac Lab Teacher–Student 학습부터 RTDE 실기 배포까지">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* 색·글꼴은 ur5e_workcell_drawing.html(작업 셀 치수도)과 같은 계열 */
+  :root{
+    --paper:#e7ecef; --sheet:#f4f7f8; --panel:#eaf0f2; --ink:#0e1a24; --ink-2:#3c525f; --ink-3:#5d717c;
+    --rule:#9aabb5; --rule-soft:#cdd7dc; --work:#0f7a6e; --work-soft:#dcefeb; --dim:#b8430f; --dim-soft:#f7e6dc;
+    --grid:rgba(14,26,36,.055);
+    --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; /* Consolas: 한국어 Windows 기본 고정폭은 \를 ₩로 그린다 */
+    --sans:"IBM Plex Sans KR",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --paper:#0a1116; --sheet:#101a21; --panel:#15222b; --ink:#e2e9ed; --ink-2:#a7b8c2; --ink-3:#8399a6;
+      --rule:#3a4d5a; --rule-soft:#22323c; --work:#45c2ae; --work-soft:#12332e; --dim:#f0915a; --dim-soft:#3a2317;
+      --grid:rgba(226,233,237,.04);
+    }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--paper);
+    background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+    background-size:20px 20px;
+    color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.65;padding:28px 20px 64px;
+  }
+  a{color:var(--work);text-underline-offset:2px}
+  code,.mono{font-family:var(--mono);font-size:.9em}
+  code{background:var(--panel);border:1px solid var(--rule-soft);border-radius:3px;padding:0 4px;overflow-wrap:anywhere}
+  h1,h2,h3{margin:0;line-height:1.3;font-weight:600}
+  p{margin:0 0 10px}
+  ul{margin:0;padding-left:18px}
+  li{margin:2px 0}
+
+  .sheet{max-width:1120px;margin:0 auto;background:var(--sheet);border:2px solid var(--ink);
+    box-shadow:0 18px 40px -28px rgba(14,26,36,.7)}
+  section{padding:30px 32px;border-top:1px solid var(--rule)}
+  h2{display:flex;align-items:baseline;gap:12px;font-size:20px;margin-bottom:18px}
+  h2 .num{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--work);border:1px solid var(--work);
+    padding:0 6px;border-radius:2px}
+  h3{font-size:15px;margin-bottom:8px}
+  .muted{color:var(--ink-3)}
+  .small{font-size:13px}
+
+  /* masthead + 표제란 */
+  .masthead{display:grid;grid-template-columns:1fr 300px;gap:24px;padding:30px 32px 26px}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.06em;color:var(--ink-3);text-transform:uppercase;margin-bottom:6px}
+  h1{font-size:34px;letter-spacing:-.01em;margin-bottom:12px}
+  .lede{font-size:16px;color:var(--ink-2);max-width:62ch}
+  .links{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+  .links a{font-family:var(--mono);font-size:13px;text-decoration:none;color:var(--ink);border:1px solid var(--ink);
+    padding:5px 10px;border-radius:2px}
+  .links a:hover{background:var(--ink);color:var(--sheet)}
+  .titleblock{border-collapse:collapse;width:100%;align-self:start;font-size:13px;border:1.5px solid var(--ink)}
+  .titleblock th,.titleblock td{border:1px solid var(--rule);padding:6px 9px;text-align:left;vertical-align:top}
+  .titleblock th{font-family:var(--mono);font-weight:500;font-size:11px;color:var(--ink-3);white-space:nowrap;width:1%}
+
+  /* 판정 + KPI */
+  .verdict{border-left:3px solid var(--work);background:var(--work-soft);padding:12px 16px;margin-bottom:20px;color:var(--ink)}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .tile{border:1px solid var(--rule);background:var(--sheet);padding:14px 16px}
+  .tile .label{font-size:13px;color:var(--ink-2)}
+  .tile .value{font-size:34px;font-weight:600;line-height:1.2;margin:4px 0 2px}
+  .tile .sub{font-size:12.5px;color:var(--ink-3)}
+  .tile.pending{border-left:3px solid var(--dim)}
+  .tile.pending .value{font-size:28px}
+
+  /* 공통 패널 */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .grid2>*,.grid3>*{min-width:0} /* 그리드 항목이 표 내용폭에 끌려 화면 밖으로 넘치지 않게 */
+  .panel{border:1px solid var(--rule);background:var(--sheet);padding:16px 18px}
+  .scroll{overflow-x:auto}
+  table.data{border-collapse:collapse;width:100%;font-size:14px}
+  table.data th,table.data td{border-bottom:1px solid var(--rule-soft);padding:7px 10px;text-align:left;vertical-align:top}
+  table.data thead th{font-family:var(--mono);font-size:11.5px;font-weight:500;color:var(--ink-3);border-bottom:1.5px solid var(--ink)}
+  table.data tbody th{font-weight:500;white-space:nowrap}
+  .num-col{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .tnum{font-variant-numeric:tabular-nums}
+
+  /* 툴 체인 */
+  .chain{list-style:none;padding:0;margin:0}
+  .chain li{position:relative;border:1px solid var(--rule);background:var(--sheet);padding:9px 12px;margin:0 0 18px}
+  .chain li:not(:last-child)::after{content:"";position:absolute;left:22px;bottom:-19px;height:18px;border-left:1.5px dashed var(--ink-3)}
+  .chain b{font-weight:600}
+  .chain .mono{display:block;color:var(--ink-3);font-size:12px}
+
+  /* Phase 흐름 */
+  .flow{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(5,1fr);gap:18px}
+  .step{position:relative;border:1px solid var(--ink);background:var(--sheet);padding:12px 13px 14px;display:flex;flex-direction:column}
+  .step:not(:last-child)::after{content:"→";position:absolute;right:-15px;top:22px;font-family:var(--mono);color:var(--work);font-weight:600}
+  .step .ph{font-family:var(--mono);font-size:11.5px;color:var(--work);font-weight:600}
+  .step h3{font-size:15px;margin:2px 0 8px}
+  .step ul{font-size:13px;color:var(--ink-2);padding-left:15px;flex:1}
+  .step .where{margin-top:10px;font-family:var(--mono);font-size:11.5px;color:var(--ink-3);overflow-wrap:anywhere;
+    border-top:1px dashed var(--rule);padding-top:7px}
+
+  /* 관측 차원 목록 */
+  .dims{list-style:none;padding:0;margin:0 0 10px;font-size:14px}
+  .dims li{display:flex;justify-content:space-between;gap:12px;border-bottom:1px dotted var(--rule-soft);padding:3px 0}
+  .dims li span:last-child{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--ink-2)}
+  .dims li.total{border-bottom:none;border-top:1.5px solid var(--ink);font-weight:600;margin-top:2px}
+  .dims li.total span:last-child{color:var(--ink)}
+  .timing{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+  .timing span{font-family:var(--mono);font-size:12.5px;border:1px solid var(--rule);padding:3px 9px;background:var(--panel)}
+
+  /* 배포 레인 */
+  .lane h3 .tag{font-family:var(--mono);font-size:11px;font-weight:500;color:var(--ink-3);margin-left:6px}
+  .pipe{list-style:none;padding:0;margin:10px 0 12px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 4px;font-size:13px}
+  .pipe li{border:1px solid var(--rule);background:var(--panel);padding:3px 8px}
+  .pipe li.policy{border-color:var(--work);background:var(--work-soft);font-weight:600}
+  .pipe li.arrow{border:none;background:none;padding:0 2px;color:var(--ink-3)}
+  .blocked{margin-top:16px;border:1px solid var(--dim);border-left-width:3px;background:var(--dim-soft);padding:12px 16px}
+  .blocked strong{color:var(--dim)}
+
+  /* 원장 카드 */
+  .ledger .panel{border-top:3px solid var(--ink)}
+  .ledger .fid{font-family:var(--mono);font-size:12px;color:var(--work);font-weight:600}
+  .ledger p{font-size:13.5px;color:var(--ink-2)}
+  .ledger .lesson{font-size:13.5px;color:var(--ink);border-top:1px dashed var(--rule);padding-top:8px;margin:0}
+
+  pre{margin:0;background:var(--panel);border:1px solid var(--rule);padding:14px 16px;overflow-x:auto;
+    font-family:var(--mono);font-size:13px;line-height:1.6;color:var(--ink)}
+  pre code{background:none;border:0;padding:0;font-size:inherit;overflow-wrap:normal}
+  pre .c{color:var(--ink-3)}
+
+  .repo{display:grid;grid-template-columns:repeat(2,1fr);gap:0 28px;margin:0}
+  .repo div{border-bottom:1px solid var(--rule-soft);padding:8px 0}
+  .repo dt{font-family:var(--mono);font-size:13px;font-weight:600}
+  .repo dd{margin:0;font-size:13.5px;color:var(--ink-2)}
+
+  .limits{list-style:none;padding:0;margin:0}
+  .limits li{display:grid;grid-template-columns:92px 1fr;gap:12px;border-bottom:1px solid var(--rule-soft);padding:9px 0;font-size:14px}
+  .badge{font-family:var(--mono);font-size:11.5px;font-weight:600;align-self:start;text-align:center;padding:2px 6px;border:1px solid}
+  .badge.p0{color:var(--dim);border-color:var(--dim);background:var(--dim-soft)}
+  .badge.open{color:var(--ink-2);border-color:var(--rule)}
+
+  footer{border-top:2px solid var(--ink);padding:22px 32px 26px;font-size:13px;color:var(--ink-2)}
+  footer ul{padding-left:16px}
+  footer h3{font-size:13px;margin:0 0 6px}
+
+  @media (max-width:960px){
+    .flow{grid-template-columns:1fr;gap:14px}
+    .step:not(:last-child)::after{content:"↓";right:auto;left:16px;top:auto;bottom:-20px}
+    .kpis{grid-template-columns:repeat(2,1fr)}
+    .grid3{grid-template-columns:1fr}
+  }
+  @media (max-width:720px){
+    body{padding:0}
+    .sheet{border-left:none;border-right:none}
+    .masthead{grid-template-columns:1fr;padding:22px 16px}
+    section{padding:24px 16px}
+    footer{padding:20px 16px}
+    h1{font-size:27px}
+    .grid2,.repo{grid-template-columns:1fr}
+    .tile .value{font-size:28px}
+    .limits li{grid-template-columns:1fr;gap:4px}
+    .badge{justify-self:start}
+  }
+  @media (max-width:420px){ .kpis{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<main class="sheet">
+
+  <header class="masthead">
+    <div>
+      <p class="eyebrow">UR5e · OnRobot 2FG7 · Intel RealSense D435i</p>
+      <h1>UR5e Sim2Real Bin Picking</h1>
+      <p class="lede">5 cm 큐브를 집어 작업면 위 가변 목표에 놓는 과제를 NVIDIA Isaac Lab에서 학습하고, 같은 관측·행동·안전 계약을 그대로 유지한 채 실기 UR5e로 옮기는 프로젝트입니다. 상태 기반 Teacher를 PPO로 먼저 학습한 뒤, RGB-D 영상만 보는 Vision Student로 증류합니다.</p>
+      <nav class="links" aria-label="저장소 링크">
+        <a href="https://github.com/ChangeDayAndNight/UR5e_SIM2REAL-public">GitHub 저장소</a>
+        <a href="https://github.com/ChangeDayAndNight/UR5e_SIM2REAL-public/blob/main/README.md">README · 원장</a>
+        <a href="https://github.com/ChangeDayAndNight/UR5e_SIM2REAL-public/blob/main/DEPLOY_GUIDE.md">DEPLOY_GUIDE</a>
+      </nav>
+    </div>
+    <table class="titleblock" aria-label="표제란">
+      <tr><th>문서</th><td>프로젝트 개요</td></tr>
+      <tr><th>판정 기준일</th><td>2026-09-25</td></tr>
+      <tr><th>sim 봉인 평가</th><td>✓ Teacher · Student 통과</td></tr>
+      <tr><th>실기 성공률</th><td>◌ 미측정</td></tr>
+      <tr><th>배포 레인</th><td>랩 실험 레인 (<code>adopted: false</code>)</td></tr>
+    </table>
+  </header>
+
+  <section id="summary" aria-labelledby="h-summary">
+    <h2 id="h-summary"><span class="num">00</span>현재 판정</h2>
+    <p class="verdict">Teacher v2(34D, 대칭 그리퍼)와 Vision Student가 모두 sim 봉인 평가(seed 42–45 × 512 = 2,048 에피소드, 보조 없음)를 통과했습니다. 실기 성공률은 아직 측정하지 않았고, 정식 릴리스 레인(패리티·지연 벤치마크·커밋 동결)은 거치지 않았습니다.</p>
+    <div class="kpis">
+      <div class="tile">
+        <div class="label">Teacher 성공률 (placed)</div>
+        <div class="value">100.00%</div>
+        <div class="sub">Wilson 95% 하한 99.81% · 2,048 / 2,048</div>
+      </div>
+      <div class="tile">
+        <div class="label">Student 성공률 (placed)</div>
+        <div class="value">94.53%</div>
+        <div class="sub">Wilson 95% 하한 93.46% · 1,936 / 2,048</div>
+      </div>
+      <div class="tile">
+        <div class="label">정책당 봉인 평가</div>
+        <div class="value">2,048</div>
+        <div class="sub">에피소드 · 인식 오차 DR과 실행 제한 적용</div>
+      </div>
+      <div class="tile pending">
+        <div class="label">실기 성공률</div>
+        <div class="value">◌ 미측정</div>
+        <div class="sub">캘리브레이션 승인 전 · 사람이 e-stop 앞에서만 실행</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="cell" aria-labelledby="h-cell">
+    <h2 id="h-cell"><span class="num">01</span>작업 셀</h2>
+    <div class="grid2">
+      <div>
+        <h3>툴 체인</h3>
+        <ol class="chain">
+          <li><b>UR5e</b> 6축 협동 로봇, base 고정<span class="mono">RTDE servoL · 20 Hz</span></li>
+          <li><b>Magbot TCW1</b> 툴 체인저<span class="mono">tool0 → 86.5 mm</span></li>
+          <li><b>브라켓 + Intel RealSense D435i</b> eye-in-hand RGB-D<span class="mono">848 × 480 · depth→color 정렬</span></li>
+          <li><b>OnRobot 2FG7</b> 평행 그리퍼, 양 손가락 대칭 구동<span class="mono">내측 폭 74 / 34 mm · DO 펄스 개폐</span></li>
+        </ol>
+      </div>
+      <div>
+        <h3>기하 (base frame, m)</h3>
+        <div class="scroll">
+          <table class="data">
+            <tbody>
+              <tr><th>물체</th><td>한 변 0.05 큐브 1개</td></tr>
+              <tr><th>작업면</th><td class="tnum">중심 (−0.50, 0.00) · 0.58 × 1.25 × 0.04<br>상면 z = −0.0375</td></tr>
+              <tr><th>목표 구역</th><td class="tnum">x ∈ [−0.725, −0.275]<br>y ∈ [−0.300, 0.300] · z = −0.0125</td></tr>
+              <tr><th>안전 AABB</th><td class="tnum">(−0.75, −0.35, −0.0375) – (−0.21, 0.35, 0.60)</td></tr>
+              <tr><th>TCP 하강 바닥</th><td class="tnum">z = −0.0075</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="small muted" style="margin-top:10px">전체 치수도는 저장소의 <a href="https://github.com/ChangeDayAndNight/UR5e_SIM2REAL-public/blob/main/ur5e_workcell_drawing.html"><code>ur5e_workcell_drawing.html</code></a>에 있습니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="pipeline" aria-labelledby="h-pipeline">
+    <h2 id="h-pipeline"><span class="num">02</span>파이프라인 — Phase 0 → 4</h2>
+    <ol class="flow">
+      <li class="step">
+        <span class="ph">PHASE 0</span>
+        <h3>환경 · scene smoke</h3>
+        <ul>
+          <li>Isaac Sim 5.1 + Isaac Lab v2.3.2 기동 확인</li>
+          <li>flange–TCW1–2FG7 체인, 카메라 방향, 작업면 육안 확인</li>
+          <li>RL 이전 파지 물리 진단</li>
+        </ul>
+        <div class="where">Phase0/scene_bin_ur5e.py</div>
+      </li>
+      <li class="step">
+        <span class="ph">PHASE 1</span>
+        <h3>State Teacher · PPO</h3>
+        <ul>
+          <li>배포 가능한 34D 관측만 쓰는 actor</li>
+          <li>critic은 sim 참값을 더한 비대칭 관측</li>
+          <li>인식 오차 DR, 실행 속도 상한 clamp</li>
+          <li>16,384 env × 25k iter</li>
+        </ul>
+        <div class="where">Isaac-BinPick-UR5e-Teacher-v0</div>
+      </li>
+      <li class="step">
+        <span class="ph">PHASE 2</span>
+        <h3>RGB-D Vision Student</h3>
+        <ul>
+          <li>채택 Teacher의 행동을 정답으로 증류 (rsl-rl DistillationRunner)</li>
+          <li>RGB-D 112² + 고유수용 관측</li>
+          <li>512 env × 25k iter</li>
+        </ul>
+        <div class="where">Phase2/VisionPick_Train.py</div>
+      </li>
+      <li class="step">
+        <span class="ph">PHASE 3</span>
+        <h3>캘리브레이션 · sim 리허설</h3>
+        <ul>
+          <li>TCP offset, ChArUco hand-eye, scene registration</li>
+          <li>실기 배포 코드 경로를 sim 로봇에 물려 리허설</li>
+        </ul>
+        <div class="where">deployment/Calib_*.py<br>Phase3/SimDeploy_Rehearsal.py</div>
+      </li>
+      <li class="step">
+        <span class="ph">PHASE 4</span>
+        <h3>fail-closed 실기</h3>
+        <ul>
+          <li>SafetyGuard 속도·작업영역 clamp, e-stop latch</li>
+          <li>증거·캘리브레이션이 없으면 실행을 거부</li>
+          <li>모션은 명시적 인가 플래그로만</li>
+        </ul>
+        <div class="where">Phase4/Run_Task_Teacher.py<br>Phase4/Run_Task.py</div>
+      </li>
+    </ol>
+  </section>
+
+  <section id="contract" aria-labelledby="h-contract">
+    <h2 id="h-contract"><span class="num">03</span>관측 · 행동 계약</h2>
+    <div class="grid3">
+      <div class="panel">
+        <h3>Teacher actor 관측</h3>
+        <ul class="dims">
+          <li><span>관절 위치 · 속도</span><span>12</span></li>
+          <li><span>gripper_command_state</span><span>1</span></li>
+          <li><span>TCP pose</span><span>7</span></li>
+          <li><span>목표 위치</span><span>3</span></li>
+          <li><span>큐브 위치 <em>추정치</em></span><span>3</span></li>
+          <li><span>held latch</span><span>1</span></li>
+          <li><span>직전 행동</span><span>7</span></li>
+          <li class="total"><span>합계</span><span>34D</span></li>
+        </ul>
+        <p class="small muted">카메라 영상은 보지 않습니다. 큐브 위치는 참값이 아니라, 실기 depth 인식 모듈과 같은 규칙(결측·편향·노이즈)으로 만든 추정치입니다.</p>
+      </div>
+      <div class="panel">
+        <h3>Student actor 관측</h3>
+        <ul class="dims">
+          <li><span>depth 1 × 112 × 112</span><span>12,544</span></li>
+          <li><span>RGB 3 × 112 × 112</span><span>37,632</span></li>
+          <li><span>관절 위치 · 속도</span><span>12</span></li>
+          <li><span>gripper_command_state</span><span>1</span></li>
+          <li><span>TCP pose</span><span>7</span></li>
+          <li><span>목표 위치</span><span>3</span></li>
+          <li><span>직전 행동</span><span>7</span></li>
+          <li class="total"><span>합계</span><span>50,206D</span></li>
+        </ul>
+        <p class="small muted">전처리는 <code>common/obs_preprocess.py</code> 하나를 sim과 실기가 공유하고, <code>obs_spec.json</code>이 순서·크기·config hash를 봉인합니다.</p>
+      </div>
+      <div class="panel">
+        <h3>행동</h3>
+        <ul class="dims">
+          <li><span>TCP Δ위치 (base frame)</span><span>3</span></li>
+          <li><span>TCP Δ축각</span><span>3</span></li>
+          <li><span>그리퍼 (&lt; 0 이면 close)</span><span>1</span></li>
+          <li class="total"><span>합계</span><span>7D</span></li>
+        </ul>
+        <p class="small muted">스텝당 스케일 0.0125 m / 0.025 rad는 배포 SafetyGuard 상한(0.25 m/s · 0.5 rad/s × 0.05 s)과 같습니다. sim은 Differential IK, 실기는 같은 의미의 ActionMapper → <code>servoL</code>로 실행합니다.</p>
+      </div>
+    </div>
+    <div class="timing" aria-label="타이밍">
+      <span>정책 20 Hz</span><span>물리 120 Hz</span><span>decimation 6</span><span>에피소드 10 s = 200 step</span>
+    </div>
+  </section>
+
+  <section id="lanes" aria-labelledby="h-lanes">
+    <h2 id="h-lanes"><span class="num">04</span>배포 레인</h2>
+    <div class="grid2">
+      <div class="panel lane">
+        <h3>모듈형 — 인식 모듈 + Teacher v2<span class="tag">권장 시작점</span></h3>
+        <ol class="pipe" aria-label="모듈형 레인 데이터 흐름">
+          <li>D435i depth</li><li class="arrow" aria-hidden="true">→</li>
+          <li>큐브 위치 추정</li><li class="arrow" aria-hidden="true">→</li>
+          <li class="policy">Teacher 34D → 7D</li><li class="arrow" aria-hidden="true">→</li>
+          <li>SafetyGuard</li><li class="arrow" aria-hidden="true">→</li>
+          <li>servoL</li>
+        </ol>
+        <p class="small">인식 실패가 화면에 바로 드러나 원인(캘리브레이션 · 작업면 높이 · 조명)을 분리해 고칠 수 있습니다.</p>
+        <p class="small muted" style="margin:0"><code>Phase4/Run_Task_Teacher.py</code> · <code>exported_experimental/teacher_177c7eefed0f/</code></p>
+      </div>
+      <div class="panel lane">
+        <h3>end-to-end — Vision Student</h3>
+        <ol class="pipe" aria-label="end-to-end 레인 데이터 흐름">
+          <li>D435i RGB-D</li><li class="arrow" aria-hidden="true">→</li>
+          <li>공유 전처리</li><li class="arrow" aria-hidden="true">→</li>
+          <li class="policy">Student 50,206D → 7D</li><li class="arrow" aria-hidden="true">→</li>
+          <li>SafetyGuard</li><li class="arrow" aria-hidden="true">→</li>
+          <li>servoL</li>
+        </ol>
+        <p class="small">중간 단계 없이 영상만으로 동작합니다. 단순하지만 실패 원인을 분리하기 어려워 Teacher로 파이프라인을 먼저 확인한 뒤 넘어갑니다.</p>
+        <p class="small muted" style="margin:0"><code>Phase4/Run_Task.py</code> · <code>exported_experimental/student_8b415b9b0831/</code></p>
+      </div>
+    </div>
+    <div class="blocked">
+      <p style="margin:0"><strong>■ 정식 릴리스 레인 — 차단(P0)</strong> · 두 번들은 랩 실험 레인(<code>adopted: false</code>)이라 사람이 e-stop 앞에서 <code>--yes-i-am-at-the-estop</code>로 명시 인가할 때만 움직입니다. 정식 릴리스(<code>adopted: true</code>, Vision Student 전용)는 <code>motion_safety</code> 증거 collector 부재, RTDE↔RealSense 타임스탬프 동기화 미증명, 2FG7 폭 feedback 부재로 막혀 있으며 <code>Phase4/Deploy_Real.py</code>는 설정을 읽기 전에 종료하는 hard-block stub입니다.</p>
+    </div>
+  </section>
+
+  <section id="gates" aria-labelledby="h-gates">
+    <h2 id="h-gates"><span class="num">05</span>채택 게이트와 봉인 평가</h2>
+    <div class="grid2">
+      <div class="scroll">
+        <table class="data">
+          <thead><tr><th></th><th>Teacher</th><th>Student</th></tr></thead>
+          <tbody>
+            <tr><th>시드별 최소</th><td class="num-col">≥ 487 / 512</td><td class="num-col">≥ 384 / 512</td></tr>
+            <tr><th>pooled Wilson 하한</th><td class="num-col">≥ 95%</td><td class="num-col">≥ 75%</td></tr>
+            <tr><th>seed 42 · 43 · 44 · 45</th><td class="num-col">512 · 512 · 512 · 512</td><td class="num-col">482 · 487 · 480 · 487</td></tr>
+            <tr><th>pooled (Wilson 하한)</th><td class="num-col">100.00% (99.81%)</td><td class="num-col">94.53% (93.46%)</td></tr>
+            <tr><th>채택 checkpoint</th><td class="num-col"><code>model_24200</code></td><td class="num-col"><code>model_24000</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul class="small">
+        <li><b>후보 선발</b> — 순간 보상이 아니라 게이트가 실제로 재는 <code>placed_success</code>의 trailing-200 median 상위 5개(최종 checkpoint 고정, 간격 500).</li>
+        <li><b>평가</b> — seed 42–45 각각 정확히 512 에피소드, assist·pre-grasp 없음, 인식 오차 DR과 실행 제한 적용.</li>
+        <li><b>권한</b> — <code>adoption.json</code>의 <code>status: adopted</code>와 정확한 checkpoint SHA-256만 다음 단계의 입력이 됩니다.</li>
+        <li><b>계보</b> — 학습·평가·채택·증류는 같은 Git commit · config hash · 스택에서만 성립하고, 예외는 명시적 인자로만 허용합니다.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="ledger" class="ledger" aria-labelledby="h-ledger">
+    <h2 id="h-ledger"><span class="num">06</span>실패 원장에서 — F01–F98 중 네 건</h2>
+    <div class="grid2">
+      <div class="panel">
+        <div class="fid">F70</div>
+        <h3>순간 보상 선발이 채택을 전멸시켰다</h3>
+        <p>성공 에피소드는 조기 종료되어 보상 합이 깎이므로, <code>mean_reward</code>는 성공률이 오르기 직전에 정점을 찍습니다. 그 정점으로 고른 후보는 전부 게이트에서 떨어졌습니다.</p>
+        <p class="lesson">선발 지표와 게이트 지표가 다르면 그 간극은 언젠가 반드시 벌어진다.</p>
+      </div>
+      <div class="panel">
+        <div class="fid">F88</div>
+        <h3>sim 100% Teacher가 실기 신호를 볼 수 없었다</h3>
+        <p>구 42D Teacher는 실제 손가락 위치·물체 속도·접촉력처럼 실기에서 만들 수 없는 신호를 관측했습니다. 34D 배포 가능 관측, 인식 오차 DR, 실행 속도 상한 정합으로 다시 설계했습니다.</p>
+        <p class="lesson">학습에서 한 번도 겪지 않은 갭은 실기 성공을 기대할 근거가 없다.</p>
+      </div>
+      <div class="panel">
+        <div class="fid">F91</div>
+        <h3>한쪽 손가락으로 집고도 99.6%</h3>
+        <p>변환된 USD에서 오른쪽 손가락이 드라이브 없는 수동 관절이었고, 정책은 큐브를 반대쪽 손가락에 밀어붙여 집는 법을 배웠습니다. URDF를 고쳐 재변환하고 대칭 프로브를 채택 절차에 넣었습니다.</p>
+        <p class="lesson">파지 정합은 성공률로 드러나지 않는다 — 산출물을 직접 읽고 영상·관절 궤적을 검사한다.</p>
+      </div>
+      <div class="panel">
+        <div class="fid">F94</div>
+        <h3>DLSS 경로에서 RGB만 죽었다</h3>
+        <p>타일 128개 이상 + headless DLSS에서 RGB가 검정·깜빡임으로 깨졌고, depth는 정상이었습니다. Student는 깨진 입력에 적응해 학습 곡선이 좋아 보였습니다. antialiasing을 끄고 학습 기동 시 렌더 가드를 걸었습니다.</p>
+        <p class="lesson">렌더 결함은 loss로 드러나지 않는다 — 채널별 공간 통계를 학습 시작 시점에도 검사한다.</p>
+      </div>
+    </div>
+    <p class="small muted" style="margin:14px 0 0">전체 원장(문제 · 기전 · 조치 · 교훈)은 <a href="https://github.com/ChangeDayAndNight/UR5e_SIM2REAL-public/blob/main/README.md">README.md</a> §6에 있습니다.</p>
+  </section>
+
+  <section id="stack" aria-labelledby="h-stack">
+    <h2 id="h-stack"><span class="num">07</span>고정 스택</h2>
+    <div class="scroll">
+      <table class="data">
+        <tbody>
+          <tr><th>학습 OS</th><td>Windows 11 native (WSL 비지원)</td></tr>
+          <tr><th>Python</th><td>3.11.15 · conda <code>isaac51</code></td></tr>
+          <tr><th>시뮬레이터</th><td>NVIDIA Isaac Sim 5.1.0 (pip) · Isaac Lab v2.3.2 (source checkout)</td></tr>
+          <tr><th>강화학습</th><td>rsl-rl-lib 3.1.2 · PyTorch 2.7.0 + CUDA 12.8</td></tr>
+          <tr><th>GPU</th><td>기준 RTX 3060 Ti 8 GB · 본 실험 RTX 5070 Ti 16 GB</td></tr>
+          <tr><th>실기 PC</th><td>Windows 11, conda <code>env_ur_real</code>, Isaac 미설치</td></tr>
+          <tr><th>실기 SDK</th><td>ur-rtde 1.6.2 · pyrealsense2 2.58</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="start" aria-labelledby="h-start">
+    <h2 id="h-start"><span class="num">08</span>빠른 시작 — 실기 배포 (Isaac Sim 불필요)</h2>
+    <p class="small"><code>setup.ps1</code>이 conda 환경 → 의존성 → <code>configs\real.local.yaml</code> 템플릿 → 배포 점검 런북을 한 번에 실행합니다. 로봇·카메라가 없어도 여기까지는 돕니다. 학습 절차는 README §2를 따릅니다.</p>
+<pre><code>git clone https://github.com/ChangeDayAndNight/UR5e_SIM2REAL-public.git
+cd UR5e_SIM2REAL-public
+powershell -ExecutionPolicy Bypass -File setup.ps1
+conda activate env_ur_real
+
+<span class="c"># 1) configs\real.local.yaml 에 robot.ip · camera.serial 기입, TCP offset · hand-eye 캘리브레이션</span>
+<span class="c"># 2) 추론만(모션 없음) — 검출률 30% 미만이면 3)으로 가지 않는다</span>
+python Phase4\Run_Task_Teacher.py --policy-dir exported_experimental\teacher_177c7eefed0f `
+    --dry-run --verbose-perception --target-pos="-0.50,0.15,-0.0125"
+
+<span class="c"># 3) 실제 모션 — 사람이 e-stop 앞에서</span>
+python Phase4\Run_Task_Teacher.py --policy-dir exported_experimental\teacher_177c7eefed0f `
+    --yes-i-am-at-the-estop --home-first --target-pos="-0.50,0.15,-0.0125"</code></pre>
+  </section>
+
+  <section id="layout" aria-labelledby="h-layout">
+    <h2 id="h-layout"><span class="num">09</span>저장소 구조</h2>
+    <dl class="repo">
+      <div><dt>Phase0/ … Phase4/</dt><dd>단계별 실행 스크립트 — scene smoke, Teacher 학습·평가, Student 증류·export, 리허설, 실기 러너</dd></div>
+      <div><dt>source/ur5e_binpick/</dt><dd>Isaac Lab 확장 패키지 — 태스크, MDP, 에이전트 설정</dd></div>
+      <div><dt>common/</dt><dd>sim·실기 공유 순수 로직 — 관측 전처리, 행동 매핑, 그리퍼 명령 상태, 큐브 인식</dd></div>
+      <div><dt>sim/ · real/</dt><dd>같은 인터페이스의 sim / 실기 로봇·카메라 어댑터</dd></div>
+      <div><dt>deployment/</dt><dd>캘리브레이션, 패리티 검증, 배포 번들 빌드, 배포 PC 런북</dd></div>
+      <div><dt>configs/</dt><dd>common · sim · dr · safety · calib — 계약을 소유하는 설정 파일</dd></div>
+      <div><dt>scripts/</dt><dd>학습 런처, preflight, 채택 파이프라인, 저장소 검증</dd></div>
+      <div><dt>analysis/ · diagnostics/</dt><dd>평가 통계·논문 표 / 물리·렌더·가시성 프로브</dd></div>
+      <div><dt>calibration/</dt><dd>hand-eye ChArUco 캡처와 번들 조정</dd></div>
+      <div><dt>assets/</dt><dd>UR5e + 2FG7 URDF·USD, D435i mesh (NOTICE · LICENSE 보존)</dd></div>
+      <div><dt>exported_experimental/</dt><dd>sim 채택 정책 번들 2종 (Teacher · Student)</dd></div>
+      <div><dt>tests/</dt><dd>Isaac·하드웨어 없이 도는 순수 pytest</dd></div>
+    </dl>
+  </section>
+
+  <section id="limits" aria-labelledby="h-limits">
+    <h2 id="h-limits"><span class="num">10</span>한계와 남은 일</h2>
+    <ul class="limits">
+      <li><span class="badge open">미측정</span><span>실기 성공률. sim 수치는 실기 인식 오차가 학습 DR 범위(편향 ≤ 1 cm, 검출률 ≥ 60%) 안일 때의 상한에 가깝고, 캘리브레이션이 어긋나면 급락합니다.</span></li>
+      <li><span class="badge open">미검증</span><span>TCP offset은 sim 체인 값(<code>calibrated: false</code>)이고, hand-eye v7(27-view ChArUco, RMS 2.01 mm)은 기계 보정 뒤 실기 재검증이 필요합니다.</span></li>
+      <li><span class="badge open">하드웨어</span><span>현재 브라켓에서는 그리퍼 바로 아래 큐브가 카메라 세로 FOV 밖입니다. 정책은 이 결측 구간을 학습에서 경험했습니다.</span></li>
+      <li><span class="badge p0">P0</span><span>2FG7은 DO 펄스 구동이라 실제 폭·파지 feedback이 없습니다. <code>gripper_command_state</code>는 명령 이력이지 파지 증거가 아닙니다.</span></li>
+      <li><span class="badge p0">P0</span><span>RTDE controller 시계와 RealSense 획득 시계의 동기화(PTP/하드웨어 타임스탬프)가 증명되지 않았습니다.</span></li>
+      <li><span class="badge p0">P0</span><span>신뢰할 수 있는 <code>motion_safety</code> 증거 collector와 승인 발행 절차가 없어 정식 릴리스의 모션 승인이 불가능합니다.</span></li>
+    </ul>
+  </section>
+
+  <footer>
+    <div class="grid2">
+      <div>
+        <h3>방법론 참고문헌</h3>
+        <ul>
+          <li><a href="https://arxiv.org/abs/1710.06542">Pinto et al., Asymmetric Actor Critic for Image-Based Robot Learning</a></li>
+          <li><a href="https://arxiv.org/abs/1703.06907">Tobin et al., Domain Randomization for Sim-to-Real Transfer</a></li>
+          <li><a href="https://arxiv.org/abs/2108.10470">Makoviychuk et al., Isaac Gym</a></li>
+          <li><a href="https://isaac-sim.github.io/IsaacLab/v2.3.2/source/api/lab/isaaclab.controllers.html">Isaac Lab v2.3.2 Differential IK controller</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3>문서와 라이선스</h3>
+        <p>이 페이지는 개요입니다. 실행 계약 · 진행 상태 · 실패 원장의 원본은 <a href="https://github.com/ChangeDayAndNight/UR5e_SIM2REAL-public/blob/main/README.md">README.md</a>, 실기 절차는 <a href="https://github.com/ChangeDayAndNight/UR5e_SIM2REAL-public/blob/main/DEPLOY_GUIDE.md">DEPLOY_GUIDE.md</a>입니다.</p>
+        <p style="margin:0">코드는 MIT License, 동봉 자산은 각 폴더의 NOTICE를 따릅니다. © 2026 ChangeDayAndNight</p>
+      </div>
+    </div>
+  </footer>
+
+</main>
+</body>
+</html>

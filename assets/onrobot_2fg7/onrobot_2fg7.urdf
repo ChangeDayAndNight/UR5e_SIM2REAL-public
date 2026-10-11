@@ -1,0 +1,119 @@
+<?xml version="1.0"?>
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     OnRobot 2FG7 평행 2핑거 그리퍼 — 단독(standalone) URDF, "outwards" 핑거 구성.
+
+     출처: github.com/juandpenan/onrobot_2FG7_gripper_description (MIT — NOTICE 참조).
+     원본 xacro(urdf/onrobot_2fg7.xacro)의 outwards 분기를 ROS/xacro 의존 없이
+     평문 URDF로 평탄화한 것 — Isaac Lab `convert_urdf`(또는 scripts/tools/
+     convert_2fg7_usd.py) 입력용. 링크 좌표·visual/collision 오프셋·관절 limit·
+     mimic 관계는 원본과 '동일'하게 보존한다(값을 임의로 바꾸면 파지 기하가 깨진다).
+
+     ★핵심 구조 (실기 2FG7과 일치)★
+       - 1-DOF 구동: left_finger_joint (prismatic, 0~0.019 m, effort 140 N)
+       - right_finger_joint 는 left 를 1:1 mimic → 두 핑거 대칭 개폐, 총 스트로크 38 mm
+       - 실물 사양: 외측 파지폭 35~73 mm, 힘 20~140 N, 질량 1.14 kg (OnRobot 데이터시트)
+
+     ★Isaac 변환 시 주의★
+       - mesh 경로는 이 URDF 파일 기준 상대경로(meshes/*.stl). scale 0.001(mm→m).
+       - mimic 처리: convert_2fg7_usd.py 가 convert_mimic_joints_to_normal_joints 로
+         제어(기본 True = 2 독립관절을 대칭 명령으로 구동 = Franka 2핑거 방식, 견고).
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<robot name="onrobot_2fg7">
+
+  <material name="silver">
+    <color rgba="0.7 0.7 0.72 1.0"/>
+  </material>
+
+  <!-- ── base_link: 그리퍼 몸체(툴 플랜지에 결합될 루트) ── -->
+  <link name="base_link">
+    <inertial>
+      <origin xyz="-4.898915958379213e-05 2.84756960271082e-06 0.06811082379774974" rpy="0 0 0"/>
+      <mass value="1.2646523179240972"/>
+      <inertia ixx="0.001504" iyy="0.001812" izz="0.001053" ixy="-0.0" iyz="0.0" ixz="-3e-06"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/base_link.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="silver"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/base_link.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- ── right_finger_link ── -->
+  <link name="right_finger_link">
+    <inertial>
+      <origin xyz="0.017874296677847158 0.02949104051991925 0.01523421548622829" rpy="0 0 0"/>
+      <mass value="0.023219383355922288"/>
+      <inertia ixx="6e-06" iyy="5e-06" izz="2e-06" ixy="-0.0" iyz="-0.0" ixz="1e-06"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.054361 0.029494 -0.12005" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/right_finger_link.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="silver"/>
+    </visual>
+    <!-- ★2026-07-29 학습 자산과 동일한 박스 콜라이더로 통일★ — 구 STL 메시 콜리전은
+         ur5e_tcw1_2fg7(박스 프리미티브)와 형상이 달라 Grasp_PhysicsTest 판정이
+         학습 환경을 대표하지 못했다. 실측 핑거팁: 두께10 x 깊이32 x 높이40mm. -->
+    <collision>
+      <origin xyz="0.02246 0.029494 0.01970" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.0192 0.032 0.045"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- ── left_finger_link ── -->
+  <link name="left_finger_link">
+    <inertial>
+      <origin xyz="0.004247703322119739 0.029496959480080673 0.015234215486237948" rpy="0 0 0"/>
+      <mass value="0.023219383355922288"/>
+      <inertia ixx="6e-06" iyy="5e-06" izz="2e-06" ixy="-0.0" iyz="0.0" ixz="-1e-06"/>
+    </inertial>
+    <visual>
+      <origin xyz="-0.032239 0.029494 -0.12005" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/left_finger_link.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="silver"/>
+    </visual>
+    <!-- ★2026-07-29 학습 자산과 동일한 박스 콜라이더로 통일★ — 구 STL 메시 콜리전은
+         ur5e_tcw1_2fg7(박스 프리미티브)와 형상이 달라 Grasp_PhysicsTest 판정이
+         학습 환경을 대표하지 못했다. 실측 핑거팁: 두께10 x 깊이32 x 높이40mm. -->
+    <collision>
+      <origin xyz="-0.00034 0.029494 0.01970" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.0192 0.032 0.045"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- ── 구동 관절: left_finger_joint (0=완전 닫힘 기준 원점, 0.019=열림) ── -->
+  <joint name="left_finger_joint" type="prismatic">
+    <!-- ★2026-07-29 핑거팁 바깥 위치 반영(실측 80/40mm) — ur5e_tcw1_2fg7.urdf와 동일 오프셋 -->
+    <origin xyz="0.046940 -0.029494 0.12005" rpy="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="left_finger_link"/>
+    <axis xyz="-1.0 0.0 0.0"/>
+    <limit lower="0.0" upper="0.020" effort="140" velocity="0.45"/>
+  </joint>
+
+  <!-- ── 종동 관절: right_finger_joint = left 를 1:1 mimic (대칭 개폐) ── -->
+  <joint name="right_finger_joint" type="prismatic">
+    <origin xyz="-0.069060 -0.029494 0.12005" rpy="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="right_finger_link"/>
+    <axis xyz="1.0 0.0 0.0"/>
+    <limit lower="-0.020" upper="0.020" effort="140" velocity="0.45"/>
+    <mimic joint="left_finger_joint" multiplier="1.0" offset="0.0"/>
+  </joint>
+
+</robot>

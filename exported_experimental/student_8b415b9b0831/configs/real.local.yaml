@@ -1,0 +1,61 @@
+# Local-only migration of the pre-cleanup equipment settings.
+# This file is intentionally ignored and remains fail-closed until each blank
+# identity and evidence binding is measured on the deployment PC.
+
+robot:
+  ip: ""              # 필수: 현장 UR 컨트롤러 IPv4를 채우십시오 (공개 저장소에는 비워 둔다)
+  servoj_lookahead_time: 0.1
+  servoj_gain: 300
+  rtde_frequency_hz: 500.0
+  movej_timeout_s: 30.0
+  expected_robot_mode: 7
+  expected_safety_mode: 1
+  no_motion_runtime_states: [1]
+  controller_version: ""
+  tcp_frame_convention: ur_base
+  tcp_command_verified: false
+  # ★2026-08-30 실기 실측 자세★ (0/-76/-103/-96/+93/+4 deg) — common/robot_spec.py와 동기
+  home_joints_rad: [0.0, -1.3265, -1.7977, -1.6755, 1.6232, 0.0698]
+
+gripper:
+  driver: do_pulse
+  do_open: 6
+  do_close: 5
+  pulse_s: 0.30
+  settle_s: 1.20
+  # A legacy bench run observed this mapping, but it predates the bound-evidence
+  # contract. Keep the approval value false until new evidence is issued.
+  driver_verified: false
+  width_feedback_verified: false
+
+camera:
+  serial: ""
+  firmware_version: ""
+  width: 848
+  height: 480
+  fps: 30
+  frame_timeout_ms: 100
+  global_time_enabled: true
+  frames_queue_size: 1
+  enable_filters: false
+
+latency:
+  measured_obs_delay_ms: null
+  measured_action_delay_ms: null
+
+evidence:
+  tcp_command: {path: "", sha256: ""}
+  tcp_offset: {path: "", sha256: ""}
+  hand_eye: {path: "", sha256: ""}
+  scene_registration: {path: "", sha256: ""}
+  camera_stream: {path: "", sha256: ""}
+  joint_parity: {path: "", sha256: ""}
+  latency: {path: "", sha256: ""}
+  force_feedback: {path: "", sha256: ""}
+  emergency_stop: {path: "", sha256: ""}
+  workspace: {path: "", sha256: ""}
+  motion_safety: {path: "", sha256: ""}
+  no_motion: {path: "", sha256: ""}
+  firmware_inventory: {path: "", sha256: ""}
+  gripper_driver: {path: "", sha256: ""}
+  gripper_width: {path: "", sha256: ""}

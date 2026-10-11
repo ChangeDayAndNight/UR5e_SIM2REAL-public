@@ -1,0 +1,394 @@
+_readme: "★전 객체 배치 레지스트리(Position/Rotation/Scale)★ — 생성기: scripts/tools/dump_scene_layout.py\n· 단위 m, 회전 quaternion = wxyz,\
+  \ frame 필드가 기준 좌표계(기본 base = UR5e base_link = env origin).\n· ★이 파일은 기록/감사/GUI 왕복용 스냅샷이다 — 학습 env가 직접 읽지 않는다.★\n  배치를 바꾸려면\
+  \ 각 객체의 source_of_truth(대개 configs/sim.yaml scene.*)를 고치고 생성기를 다시 실행.\n· GUI로 배치를 확정하는 절차: scripts/tools/place_workspace_gui.py\
+  \ 실행 → 기즈모/슬라이더로 배치 →\n  Phase1/logs/workspace_ghost_pose.yaml 기록 → `dump_scene_layout.py --from-gui` 로 이 파일 갱신 →\n  값 검토\
+  \ 후 configs/sim.yaml scene.* 에 반영(학습에 실제 적용되는 지점).\n· size_m은 큐보이드 실치수, scale은 USD 스케일 배율(3DGS 배경 등)."
+schema_version: 2
+meta:
+  date: '2026-08-11'
+  generated_by: scripts/tools/dump_scene_layout.py
+  generated_from: configs/sim.yaml + common.yaml + calib/{hand_eye,tcp_offset,scene_registration}.yaml
+  gui_source: null
+  gui_warnings: null
+  frame_convention: position [m], rotation quaternion wxyz, base frame = UR5e base_link = env origin
+  num_objects: 1
+derived_constants:
+  table_height_m: -0.0375
+  stand_height_m: 0.8325
+  belt_center_xy_m:
+  - -0.5
+  - 0.0
+  belt_yaw_deg: 180.0
+  pick_zone_m:
+  - 0.45
+  - 0.6
+  belt_size_m:
+  - 0.58
+  - 1.25
+  - 0.04
+  object_size_m: 0.05
+objects:
+  ground_plane:
+    prim_path: /World/GroundPlane
+    frame: base
+    position_m:
+    - 0.0
+    - 0.0
+    - -0.87
+    rotation_quat_wxyz:
+    - 1.0
+    - 0.0
+    - 0.0
+    - 0.0
+    scale:
+    - 1.0
+    - 1.0
+    - 1.0
+    size_m: null
+    source_of_truth: sim.yaml scene.table_height_m - scene.stand_height_m
+    defined_in: mdp/scene.py BinPickSceneCfg.plane
+    editable_via: configs/sim.yaml scene.stand_height_m
+    note: 무한 평면(GroundPlaneCfg). 벨트 밖 낙하가 여기까지 떨어져 드롭 종료를 발화.
+  robot:
+    prim_path: '{ENV_REGEX_NS}/Robot'
+    frame: base
+    position_m:
+    - 0.0
+    - 0.0
+    - 0.0
+    rotation_quat_wxyz:
+    - 1.0
+    - 0.0
+    - 0.0
+    - 0.0
+    scale:
+    - 1.0
+    - 1.0
+    - 1.0
+    size_m: null
+    source_of_truth: mdp/ur5e_assets.py UR5E_CFG.init_state.pos (= env origin 고정)
+    defined_in: mdp/ur5e_assets.py:UR5E_CFG
+    editable_via: ★고정 권장★ — base = env origin이 요소4(hand_eye/tcp_offset) 전제. 옮기려면 캘리브 계약 재검토
+    note: USD = assets/ur5e_2fg7/ur5e_tcw1_2fg7.usd (UR5e + Magbot TCW1 + OnRobot 2FG7 + D435i 브라켓)
+    home_joints_rad:
+      shoulder_pan_joint: 3.141593
+      shoulder_lift_joint: -1.5708
+      elbow_joint: 0.7854
+      wrist_1_joint: -0.5585
+      wrist_2_joint: -1.5708
+      wrist_3_joint: 0.0
+    home_joints_deg:
+      shoulder_pan_joint: 180.0
+      shoulder_lift_joint: -90.0
+      elbow_joint: 45.0
+      wrist_1_joint: -32.0
+      wrist_2_joint: -90.0
+      wrist_3_joint: 0.0
+    gripper_joint_range_m:
+    - 0.0
+    - 0.02
+  tcp_frame:
+    prim_path: '{ENV_REGEX_NS}/Robot/wrist_3_link  →(offset)  TCP'
+    frame: flange(wrist_3_link)
+    position_m:
+    - 0.0005
+    - 0.0
+    - 0.2425
+    rotation_quat_wxyz:
+    - 1.0
+    - 0.0
+    - 0.0
+    - 0.0
+    scale:
+    - 1.0
+    - 1.0
+    - 1.0
+    size_m: null
+    source_of_truth: configs/calib/tcp_offset.yaml T_flange_tcp
+    defined_in: mdp/scene.py BinPickSceneCfg.ee_frame
+    editable_via: deployment/Calib_TcpOffset.py(실측) 또는 configs/calib/tcp_offset.yaml
+    note: z=0.2262 = TCW1(86.5mm) 포함 파지중심. 프림이 아니라 센서 프레임이라 GUI 기즈모로 못 움직인다.
+  belt:
+    prim_path: '{ENV_REGEX_NS}/Belt'
+    frame: base
+    position_m:
+    - -0.5
+    - 0.0
+    - -0.0575
+    rotation_quat_wxyz:
+    - 0.0
+    - 0.0
+    - 0.0
+    - 1.0
+    scale:
+    - 1.0
+    - 1.0
+    - 1.0
+    size_m:
+    - 0.58
+    - 1.25
+    - 0.04
+    source_of_truth: sim.yaml scene.belt_size_m + scene.belt_center_xy_m + scene.table_height_m
+    defined_in: mdp/scene.py _make_belt()
+    editable_via: configs/sim.yaml scene.belt_center_xy_m / belt_size_m
+    note: 상면 = z=-0.0375 (base). 색 (0.08, 0.3, 0.18) (실셀 초록 컨베이어 근사). yaw는 0만 지원(스폰/타겟 샘플링이 축정렬)
+  belt_stand:
+    prim_path: '{ENV_REGEX_NS}/BeltStand'
+    frame: base
+    position_m:
+    - -0.5
+    - 0.0
+    - -0.47375
+    rotation_quat_wxyz:
+    - 1.0
+    - 0.0
+    - 0.0
+    - 0.0
+    scale:
+    - 1.0
+    - 1.0
+    - 1.0
+    size_m:
+    - 0.406
+    - 0.625
+    - 0.7925
+    source_of_truth: mdp/scene.py (belt_size_m·stand_height_m 파생 — 비율 0.7/0.5는 코드 상수)
+    defined_in: mdp/scene.py BinPickSceneCfg.belt_stand
+    editable_via: configs/sim.yaml scene.stand_height_m (비율은 코드)
+    note: 정적 큐보이드(콜라이더 있음, 물리 바디 없음). 학습 무영향 스캐폴딩.
+  robot_stand:
+    prim_path: '{ENV_REGEX_NS}/RobotStand'
+    frame: base
+    position_m:
+    - 0.0
+    - 0.0
+    - -0.435
+    rotation_quat_wxyz:
+    - 1.0
+    - 0.0
+    - 0.0
+    - 0.0
+    scale:
+    - 1.0
+    - 1.0
+    - 1.0
+    size_m:
+    - 0.21
+    - 0.21
+    - 0.87
+    source_of_truth: mdp/scene.py (0.21 각기둥은 코드 상수, 높이는 stand_height_m 파생)
+    defined_in: mdp/scene.py BinPickSceneCfg.robot_stand
+    editable_via: configs/sim.yaml scene.stand_height_m (단면 0.21은 코드)
+    note: 상면 = 로봇 base(z=0)에 정확히 닿게 디커플됨.
+  dome_light:
+    prim_path: /World/light
+    frame: world
+    position_m: null
+    rotation_quat_wxyz:
+    - 1.0
+    - 0.0
+    - 0.0
+    - 0.0
+    scale:
+    - 1.0
+    - 1.0
+    - 1.0
+    size_m: null
+    source_of_truth: mdp/scene.py BinPickSceneCfg.light (intensity DR = configs/dr.yaml lighting)
+    defined_in: mdp/scene.py BinPickSceneCfg.light
+    editable_via: mdp/scene.py (세기 랜덤화 범위는 configs/dr.yaml)
+    note: DomeLight — 위치 개념 없음(전역). 세기는 events_dr.randomize_light_intensity가 런타임 변경.
+    intensity: 3000.0
+    color:
+    - 0.75
+    - 0.75
+    - 0.75
+  object_0:
+    prim_path: '{ENV_REGEX_NS}/Object_0'
+    frame: base
+    position_m:
+    - -0.5
+    - 0.0
+    - 0.0275
+    rotation_quat_wxyz:
+    - 1.0
+    - 0.0
+    - 0.0
+    - 0.0
+    scale:
+    - 1.0
+    - 1.0
+    - 1.0
+    size_m:
+    - 0.05
+    - 0.05
+    - 0.05
+    source_of_truth: sim.yaml scene.object_size_m + belt_center_xy_m (스폰 z는 scene.py 계단식)
+    defined_in: mdp/scene.py make_scatter_object_cfg()
+    editable_via: configs/sim.yaml scene.object_size_m / num_objects
+    note: ★위 position은 '초기 스폰'일 뿐★ — 매 에피소드 events_dr.scatter_*가 아래 범위로 재배치한다.
+    mass_kg: 0.05
+    friction_static_dynamic:
+    - 1.0
+    - 1.0
+    reset_scatter_range_base_m:
+      x:
+      - -0.65
+      - -0.35
+      y:
+      - -0.225
+      - 0.225
+      z:
+      - 0.0275
+      - 0.0775
+      yaw_rad:
+      - -3.1416
+      - 3.1416
+  wrist_camera:
+    prim_path: '{ENV_REGEX_NS}/Robot/wrist_3_link/WristCam'
+    frame: flange(wrist_3_link)
+    position_m:
+    - -0.001165
+    - -0.069865
+    - 0.018422
+    rotation_quat_wxyz:
+    - 0.989445
+    - 0.144139
+    - 0.006208
+    - 0.013599
+    scale:
+    - 1.0
+    - 1.0
+    - 1.0
+    size_m: null
+    source_of_truth: configs/calib/hand_eye.yaml T_flange_cam (★sim/real 공유 단일 소스★)
+    defined_in: mdp/scene.py make_tiled_camera_cfg()
+    editable_via: deployment/Calib_HandEye.py(실측) — 손으로 고치지 말 것(요소4)
+    note: convention=ros(광축 +Z). 해상도/FOV는 sim.yaml camera. 실측-공칭 차가 dr.yaml camera_pose 범위(±1cm/±1°)를 넘으면 재학습 판정(§4-5).
+    resolution_px:
+    - 112
+    - 112
+    vertical_fov_deg: 42.5
+    horizontal_fov_deg: 69.4
+    clipping_near_m: 0.05
+  d435i_body_visual:
+    prim_path: '{ENV_REGEX_NS}/Robot/wrist_3_link/D435iBody'
+    frame: flange(wrist_3_link)
+    position_m:
+    - -0.001165
+    - -0.069865
+    - 0.018422
+    rotation_quat_wxyz:
+    - 0.014005
+    - 0.005226
+    - -0.597722
+    - -0.801564
+    scale:
+    - 1.0
+    - 1.0
+    - 1.0
+    size_m: null
+    source_of_truth: configs/calib/hand_eye.yaml T_flange_cam @ D435_MESH_IN_OPTICAL(코드 상수)
+    defined_in: mdp/scene.py make_d435i_body_cfg()
+    editable_via: hand_eye.yaml (본체는 카메라를 자동 추종 — 따로 배치하지 않는다)
+    note: 시각 전용(콜라이더·질량 없음). 회전만 메시축 보정이 들어가 카메라와 다르다.
+  nurec_background:
+    prim_path: '{ENV_REGEX_NS}/NuRecBackground'
+    frame: base
+    position_m:
+    - 0.339206
+    - -0.192019
+    - 0.517233
+    rotation_quat_wxyz:
+    - 0.652915
+    - -0.627077
+    - 0.312314
+    - -0.287986
+    scale:
+    - 0.17
+    - 0.17
+    - 0.17
+    size_m: null
+    source_of_truth: configs/calib/scene_registration.yaml T_base_nurec + scale
+    defined_in: mdp/scene.py make_nurec_background_cfg()
+    editable_via: scripts/tools/place_nurec_gui.py (GUI 배치 → 같은 yaml 갱신)
+    note: 실셀 3DGS 스캔(assets/Scene/Workplace.usdz). ★NuRec 태스크에서만 부착★. rgb에만 렌더(depth 미기여).
+  belt_visual_nurec:
+    prim_path: '{ENV_REGEX_NS}/BeltVisualNuRec'
+    frame: base
+    position_m:
+    - -0.5
+    - 0.0
+    - -0.0605
+    rotation_quat_wxyz:
+    - 0.0
+    - 0.0
+    - 0.0
+    - 1.0
+    scale:
+    - 1.0
+    - 1.0
+    - 1.0
+    size_m:
+    - 0.58
+    - 1.25
+    - 0.04
+    source_of_truth: sim.yaml scene.belt_* + sink 3mm(코드 상수)
+    defined_in: mdp/scene.py make_nurec_belt_visual_cfg()
+    editable_via: configs/sim.yaml scene.belt_* (sink는 코드)
+    note: NuRec env 전용 depth 대역 플레이트(무충돌). 물리 벨트는 비가시화되고 이 플레이트가 depth를 담당.
+  target_zone:
+    prim_path: '(프림 아님 — command: target_pos)'
+    frame: base
+    position_m:
+    - -0.5
+    - 0.0
+    - -0.0125
+    rotation_quat_wxyz:
+    - 1.0
+    - 0.0
+    - 0.0
+    - 0.0
+    scale:
+    - 1.0
+    - 1.0
+    - 1.0
+    size_m:
+    - 0.45
+    - 0.6
+    - 0.0
+    source_of_truth: configs/common.yaml target.sample_range (★sim/real 공유★)
+    defined_in: binpick_env_cfg.py CommandsCfg / common.yaml
+    editable_via: configs/common.yaml target.sample_range
+    note: place 목표의 균일 샘플 박스. 벨트를 옮기면 ★반드시 함께★ 옮겨야 한다(관측 계약).
+    range_m:
+      x:
+      - -0.725
+      - -0.275
+      y:
+      - -0.3
+      - 0.3
+      z:
+      - -0.0125
+      - -0.0125
+  pregrasp_assist_point:
+    prim_path: (프림 아님 — reset 이벤트가 큐브를 여기 배치)
+    frame: base
+    position_m:
+    - -0.2975
+    - -0.1328
+    - 0.5091
+    rotation_quat_wxyz:
+    - 1.0
+    - 0.0
+    - 0.0
+    - 0.0
+    scale:
+    - 1.0
+    - 1.0
+    - 1.0
+    size_m: null
+    source_of_truth: mdp/events_dr.py _PREGRASP_GRIP (★하드코딩 — 홈 포즈 종속★)
+    defined_in: mdp/events_dr.py:_PREGRASP_GRIP
+    editable_via: diagnostics/measure_grasp_frame.py 재실측 (홈 포즈를 바꾸면 필수)
+    note: ★홈 포즈 finger pad 중점★. 홈 포즈나 TCW1 체인을 바꾸면 이 값이 즉시 무효가 된다(과거 사고 지점). eval cfg에서는 pregrasp 보조가 꺼진다.

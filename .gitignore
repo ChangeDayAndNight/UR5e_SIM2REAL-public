@@ -1,0 +1,133 @@
+# Python / test / coverage
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+.venv/
+venv/
+
+# Editor / OS / local agents
+.idea/
+.vscode/
+.claude/
+.DS_Store
+Thumbs.db
+*.swp
+*.tmp
+*.bak
+nohup.out
+
+# Local secrets and machine identity
+.env
+.env.*
+!.env.example
+configs/real.local.yaml
+deployment/evidence/
+deployment/wheelhouse/
+
+# Project-owned documentation policy: root README is the only Markdown file.
+*.md
+!/README.md
+!/DEPLOY_GUIDE.md
+
+# Training, evaluation and generated reports
+**/train/
+**/logs/
+outputs/
+Phase*/Result/
+events.out.tfevents.*
+*.watch.json
+*.pt
+*.onnx
+*.engine
+*.npy
+*.npz
+
+# The accepted deployment pair is the only model exception.
+exported/
+# Atomic final-export staging is a validated root sibling with this exact prefix.
+.exported.staging-*/
+
+# Generated deployment bundles and stale archives
+Real_Verify*.zip
+
+# Generated setup/presentation/report material
+docs/setup_logs/
+Env_Fig/
+docs/UR5e_소개.html
+gripper_report.html
+gripper_problem.png
+calibration/calibration_report.docx
+calibration/calibration_report.pptx
+
+# Isaac Lab is an external, read-only source checkout.
+IsaacLab/
+external/
+
+# Generated USD/cache artifacts; URDF and source meshes remain tracked.
+assets/onrobot_2fg7/onrobot_2fg7.usd
+assets/onrobot_2fg7/onrobot_2fg7/
+assets/ur5e_2fg7/ur5e_2fg7.usd
+assets/ur5e_2fg7/ur5e_2fg7/
+assets/ur5e_2fg7/ur5e_tcw1_2fg7.usd
+assets/ur5e_2fg7/ur5e_tcw1_2fg7/
+assets/magbot_tcw1/magbot_tcw1.usd
+assets/magbot_tcw1/magbot_tcw1/
+assets/d435i/d435i.usd
+assets/d435i/Props/*
+assets/**/.asset_hash
+assets/**/config.yaml
+assets/**/configuration/*
+
+# 학습 재현에 필요한 canonical USD bundle은 예외로 커밋한다. 루트 USD만으로는 열리지
+# 않으므로 UR5e composition 5개와 D435i instanceable pair를 항상 한 묶음으로 관리한다.
+!assets/ur5e_2fg7/ur5e_tcw1_2fg7.usd
+!assets/ur5e_2fg7/configuration/ur5e_tcw1_2fg7_base.usd
+!assets/ur5e_2fg7/configuration/ur5e_tcw1_2fg7_physics.usd
+!assets/ur5e_2fg7/configuration/ur5e_tcw1_2fg7_robot.usd
+!assets/ur5e_2fg7/configuration/ur5e_tcw1_2fg7_sensor.usd
+!assets/d435i/d435i.usd
+!assets/d435i/Props/instanceable_meshes.usd
+
+# Large local source assets. Small shells/manifests remain tracked.
+assets/magbot_tcw1/Meshy_AI_*.obj
+assets/magbot_tcw1/Meshy_AI_*.mtl
+assets/magbot_tcw1/Meshy_AI_*.png
+assets/Scene/*.ply
+assets/Scene/*.usdz
+assets/Scene/Workplace.provenance.json
+assets/Workspace/sim_assets/
+Real_Environment/
+
+# Raw calibration captures are local; validated configs/calib/*.yaml remain tracked.
+calibration/captures*/cap_*.png
+calibration/.claude/
+**/configs/calib/backup/
+
+# ★F74★ 모션 인가는 현장 1회성 결정 — 저장소에 커밋하지 않는다
+configs/motion_authorization.yaml
+
+# ★F75★ 실험 정책 산출물(비릴리스) — 7MB TorchScript, 재생성 가능
+# ★F98★ 실험 번들은 기본 제외하되, sim 채택된 배포 번들 2종은 저장소에 싣는다(받아서 바로 실행).
+exported_experimental/*
+!exported_experimental/teacher_177c7eefed0f/
+!exported_experimental/student_8b415b9b0831/
+!exported_experimental/*/policy.pt
+!exported_experimental/*/DEPLOY_README.md
+
+# 배포 PC 반출용 묶음 — 재생성 가능(16MB)
+Tomorrow/
+
+# 반출용 zip — 재생성 가능
+Tomorrow*.zip
+
+# graphify knowledge-graph outputs/cache (local tooling, never training evidence)
+graphify-out/

@@ -1,0 +1,50 @@
+name: Isaac GPU manual gate
+
+on:
+  workflow_dispatch:
+
+jobs:
+  isaac-gpu:
+    name: isaac-5.1-lab-2.3.2-fail-closed
+    runs-on: [self-hosted, Windows, X64, isaac51, nvidia-gpu]
+    timeout-minutes: 120
+    env:
+      OMNI_KIT_ACCEPT_EULA: "YES"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Bootstrap exact Isaac training environment
+        shell: powershell
+        run: powershell -ExecutionPolicy Bypass -File scripts/bootstrap_training.ps1
+
+      - name: Validate non-editable extension wheel and every packaged module
+        shell: powershell
+        run: |
+          if (-not (Test-Path -LiteralPath $env:ISAACLAB_ENV_PY -PathType Leaf)) {
+            throw "bootstrap did not publish ISAACLAB_ENV_PY"
+          }
+          $python = (& $env:ISAACLAB_ENV_PY scripts/training_env.py --resolve-python | Out-String).Trim()
+          if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $python -PathType Leaf)) {
+            throw "canonical training Python resolver failed: $python"
+          }
+          $gateRoot = Join-Path $env:RUNNER_TEMP ("ur5e-wheel-gate-" + [guid]::NewGuid().ToString("N"))
+          $wheelDir = Join-Path $gateRoot "wheel"
+          $targetDir = Join-Path $gateRoot "target"
+          New-Item -ItemType Directory -Path $wheelDir, $targetDir -Force | Out-Null
+          & $python -m pip wheel --no-deps --no-build-isolation --wheel-dir $wheelDir source/ur5e_binpick
+          if ($LASTEXITCODE -ne 0) { throw "extension wheel build failed" }
+          $wheels = @(Get-ChildItem -LiteralPath $wheelDir -Filter "ur5e_binpick-*.whl")
+          if ($wheels.Count -ne 1) { throw "expected one extension wheel; got $($wheels.Count)" }
+          & $python -m pip install --no-deps --target $targetDir $wheels[0].FullName
+          if ($LASTEXITCODE -ne 0) { throw "isolated wheel install failed" }
+          & $python -I scripts/validate_extension_wheel.py --target $targetDir --support-root . --expected-modules 14 --launch-app
+          if ($LASTEXITCODE -ne 0) { throw "isolated wheel import gate failed" }
+
+      - name: Fail-closed UR5e smoke and one-iteration train
+        shell: powershell
+        run: powershell -ExecutionPolicy Bypass -File scripts/train.ps1 -Preset Teacher -Smoke
+
+      - name: Vision one-iteration launch gate
+        shell: powershell
+        run: powershell -ExecutionPolicy Bypass -File scripts/train.ps1 -Preset Vision -NumEnvs 4 -MaxIterations 1 -Seed 42 -Headless -SkipPostprocess

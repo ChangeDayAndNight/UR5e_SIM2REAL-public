@@ -1,0 +1,10 @@
+D435 시각 메시 (d435.dae)
+출처: IntelRealSense/realsense-ros (ros2-master), realsense2_description/meshes/d435.dae
+라이선스 원문 확인 commit: 60c850958d651130fc2cc3d10efb37ff5be93da5
+라이선스: Apache License 2.0 (Copyright Intel Corporation)
+라이선스 전문: LICENSE-Apache-2.0.txt
+용도: sim 시각 전용(visual-only) 카메라 본체 — 충돌/질량 미반영(2026-07-15 사용자 승인).
+      D435i는 D435와 외형 동일(IMU 내장 차이) — 시각 자산으로 등가 사용.
+변환: scripts/tools/convert_d435i_usd.py (isaaclab MeshConverter) → d435i.usd
+      d435i.usd와 Props/instanceable_meshes.usd는 fresh-clone Vision 학습을 위한
+      canonical manifest 자산으로 일반 Git 파일에 포함한다.

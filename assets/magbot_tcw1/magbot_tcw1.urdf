@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ═══════════════════════════════════════════════════════════════════════
+     Magbot TCW1 마그네틱 툴체인저 — 스펙 기반 프록시 자산 (B안, 2026-07-15)
+
+     공개 CAD(STEP/URDF) 부재 → 사용자 실측 스펙 기반 원기둥 프록시:
+       외경 Ø95mm(r=0.0475), 결합 길이 86.5mm, 질량 1.162kg(로봇측+툴측 합산),
+       가반하중 10kg. 로봇측 플랜지 = UR tool0(ISO 9409-1-50-4-M6) 동심 결합.
+     관성 = 균질 원기둥 해석식:
+       Izz = ½mr²                 = 0.5·1.162·0.0475²            = 1.311e-3
+       Ixx = Iyy = m(3r²+h²)/12   = 1.162·(3·0.0475²+0.0865²)/12 = 1.380e-3
+     프레임: 링크 원점 = 로봇측 결합면 중심, +z = 공구축(툴측 방향).
+     ⚠️ 벤더(magbot.kr) STEP 확보 시 이 프록시를 실형상으로 교체(조사 이력은 Git history,
+        현행 정책은 루트 README 자산 절). 실형상 교체해도 결합 스택 86.5mm는 불변 계약.
+     사용처: ① 단독 USD(뷰포트 검수용) ② ur5e_2fg7/ur5e_tcw1_2fg7.urdf가 동일
+       수치를 인라인으로 내장(결합 articulation은 단일 URDF여야 하므로 참조 아님).
+     변환: scripts/tools/convert_2fg7_usd.py 에 input=magbot_tcw1.urdf,
+           output=magbot_tcw1.usd, fix_base 플래그로 실행 (CLI 인자)
+     ═══════════════════════════════════════════════════════════════════════ -->
+<robot name="magbot_tcw1">
+  <material name="tcw1_dark">
+    <color rgba="0.25 0.25 0.28 1.0"/>
+  </material>
+
+  <link name="tcw1_link">
+    <inertial>
+      <origin xyz="0 0 0.04325" rpy="0 0 0"/>
+      <mass value="1.162"/>
+      <inertia ixx="0.001380" iyy="0.001380" izz="0.001311" ixy="0" iyz="0" ixz="0"/>
+    </inertial>
+    <!-- ★시각 = 사용자 제공 Magbot OBJ(Meshy AI)★ — 비균일 스케일로 Ø95×86.5 보정 +
+         Rx90°(mesh y축→z축) + z정렬. 상세=ur5e_tcw1_2fg7.urdf tcw1_link 주석. 시각 전용. -->
+    <visual>
+      <origin xyz="0 0 0.04325" rpy="1.5707963267948966 0 0"/>
+      <geometry>
+        <mesh filename="magbot_tcw1_visual.obj" scale="0.06188 0.08800 0.04750"/>
+      </geometry>
+      <material name="tcw1_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.04325" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.0475" length="0.0865"/>
+      </geometry>
+    </collision>
+  </link>
+</robot>

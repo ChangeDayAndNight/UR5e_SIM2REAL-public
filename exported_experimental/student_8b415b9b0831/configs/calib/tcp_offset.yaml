@@ -1,0 +1,32 @@
+# =====================================================================
+# tcp_offset.yaml — wrist_3_link→TCP(파지중심) 변환 (요소4). ★OnRobot 2FG7★.
+# ★★2026-07-10 근본버그 재수정★★: 이전 값 (-0.013,-0.030,0.121)은 finger '바디원점(너클/조인트원점)'
+#   기준이라 실제 finger '콜라이더 pad 중심'에서 ★~3.5cm 벗어나 있었다★ (특히 y=-0.030은 두 finger
+#   중점이 아니라 한쪽 finger 조인트원점 offset). → ee_frame TCP가 pad가 아닌 너클을 파지중심으로
+#   써서 reach가 헛점 유도 + pregrasp가 pad 밖에 큐브 배치 → grasp/lift 미학습의 근본원인.
+#   (2026-07-09~10 전면 포렌식: STL 정점bound + USD 콜라이더 mesh + Y/Z-sweep + 렌더로 확정.)
+# ★측정 방법★: usd_collision_inspect.py로 finger collision mesh 중심의 링크-프레임 오프셋 실측
+#   (L=(-0.0003,0.0295,0.0197) R=(0.0225,0.0295,0.0197)) → sim에서 finger body world pose로 world
+#   변환 → 두 pad 중점을 wrist_3_link 프레임으로 subtract_frame_transforms(정확 대칭 y≈0 확인).
+#   재현: diagnostics/measure_grasp_frame.py.
+# ⚠️ 이 offset은 sim ee_frame이 wrist_3_link에 적용한다(scene.py). real getActualTCPPose는
+#   flange 기준이라, 배포 시 Calib_TcpOffset.py가 real 프레임 기준으로 재캘리브해 같은 파지중심을
+#   내도록 갱신해야 한다(요소4 sim/real 정합 — 현재 sim 학습용 값). meta.calibrated=false 유지.
+# =====================================================================
+
+# ★★2026-07-15 기구학 체인 정정 — Magbot TCW1 툴체인저 삽입★★:
+#   실기 체인 = tool0 → TCW1(결합 스택 86.5mm, magbot.kr 공식 스펙) → 2FG7.
+#   sim 재실측(measure_grasp_frame.py, ur5e_tcw1_2fg7.usd): z=0.2262 — 공칭 예측
+#   0.1398+0.0865=0.2263과 0.1mm 일치(체인 정확성 검증). x=0.0005(대칭 중심).
+T_flange_tcp:   # 4x4 homogeneous, row-major. wrist_3_link→파지중심(2FG7). 회전=identity(위치만).
+  - [1.0, 0.0, 0.0,  0.0005]    # ★x: 대칭 중심(≈0)★
+  - [0.0, 1.0, 0.0,  0.0000]    # ★y: 파지축 정중앙(measure_grasp_frame 실측 =0)★
+  - [0.0, 0.0, 1.0,  0.2425]    # ★z: 5단 체인 전체(2026-07-30 사용자 실측 역산)★
+  - [0.0, 0.0, 0.0,  1.0]
+
+meta:
+  calibrated: false               # sim 측정값 — real은 Calib_TcpOffset로 재캘리브
+  gripper_model: "onrobot_2fg7"   # ★2FG7 확정(2026-07-06)★ + ★TCW1 체인(2026-07-15)★
+  method: "chain_sum_from_user_measured_total_265mm"   # 5단 체인 역산(사진+실측)
+  date: "2026-07-30"
+  residual_m: null                # N/A (calibrated=false, sim 측정값). 실 캘리브 시 잔차 기입 — §4-5

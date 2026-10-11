@@ -1,0 +1,186 @@
+# =====================================================================
+# common.yaml — sim(env_isaaclab)과 real(env_ur_real, 별도 PC)이 함께 읽는
+#               단일 파라미터 소스. 여기 값이 바뀌면 "양쪽이 동시에" 바뀐다.
+# ⚠️ 이 파일과 configs/calib/*.yaml은 배포 PC로 반드시 함께 복사한다.
+# =====================================================================
+
+control:
+  # 요소3: sim dt ↔ 실기 control rate 정합.
+  # decimation은 저장하지 않는다 — common/timing.py:derive_decimation()이
+  # physics_hz/control_hz에서 파생하고, 정수로 나눠떨어지지 않으면 ValueError로
+  # 학습 시작 자체를 차단한다 (세 값이 서로 어긋나는 사고 원천 봉쇄).
+  control_hz: 20.0        # 정책 스텝 주기 [Hz] — real: servoJ 전송 주기와 동일
+  physics_hz: 120.0       # sim 물리 주기 [Hz] → sim.dt = 1/120, decimation = 6
+
+# Student가 보는 1D 신호는 실제 finger q/폭이 아니라 지연 후 전달된 binary 명령의
+# 결정론적 상태다. 0=open, 1=close이며 정책 스텝마다 목표 쪽으로 1/24 이동한다.
+# 현재 DO 배선에는 폭 feedback이 없으므로 이 값을 실제 개도/파지 증거로 해석하면 안 된다.
+gripper_command_state:
+  transition_s: 1.20      # 20 Hz × 1.20 s = 정확히 24 policy steps
+
+# ★릴리스 수퍼바이저(2026-08-16, F65 이후)★ — 릴리스는 학습 대상이 아니라 실행 primitive다.
+#   근거(프로브 실측, model_6000·256ep·성공종료 비활성·≥10스텝 배포 등급):
+#     정책이 스스로 개방 0.0% / 강제개방+팔이동 11.7% / 강제개방+팔정지 63.7%(큐브 pose=sim전용)
+#     / ★TCP 정지 기반 트리거 + 팔 정지 66.8%(배포 가능)★
+#   판정식·상수는 common/release_supervisor.py가 이 블록만 읽는다(sim/real 단일 소스).
+#   ⚠️이 값을 바꾸면 학습과 배포의 행동 계약이 함께 바뀐다 — Teacher부터 재학습 대상이다.
+release_supervisor:
+  # ★F68-c★ 절대 높이 -> 폐합 이후 상대 상승량. 실측(채택 teacher 256ep): 들림 중 TCP z는
+  #   p50 0.0319 / p90 0.0448 / p99 0.0618이고 구 임계 0.100을 넘는 스텝은 0.01%뿐이었다
+  #   = 정상 운반으로는 도달 불가. 구 latch는 운반이 아니라 '접근 초기 높은 곳에서의 폐합'을
+  #   추적하고 있었다. 폐합 높이(<0.040)에서 운반 높이(~0.032)까지 실제 상승은 1.5~2cm대라
+  #   그보다 보수적인 1.0cm를 쓴다.
+  lift_rise_m: 0.010      # 폐합 시점 대비 상승량 [m] — 이만큼 오르면 '운반 중'
+  tcp_z_max_m: 0.075      # 개방 허용 TCP 높이 상한 — 배치 높이까지 내려왔는가 (프로브 실측값)
+  tcp_settle_mps: 0.02    # 개방/폐합 허용 TCP 속도 상한 — 정책이 멈췄는가 (0.05는 57.8%로 열위)
+  # ★F92(2026-09-20)★ 정지 판정은 ★연속 N창★이다. Teacher v2 스케일(12.5 mm/스텝)에서 정지 임계는
+  #   1 mm/창이고 운반 전 구간(TCP z p99 0.062)이 tcp_z_max 아래라 높이는 가드가 아니다 — 창 하나로
+  #   비가역 릴리스가 걸린다. 실기 servoL 추종 지연은 방향 전환에서 창 하나를 1 mm 아래로 떨어뜨릴 수 있다.
+  tcp_settle_steps: 3     # 연속 정지 창 수 — 3×50 ms = 150 ms 멈춰야 릴리스 (release_supervisor.settle_counter_update)
+  # ★F92★ 그리퍼 전이 잠금 — 실기 DO-pulse 드라이버는 펄스(real.yaml gripper.pulse_s 0.30 s) 중 반전을
+  #   e-stop으로 처리한다. sim/real 공통 판정에서 전이 뒤 이 스텝 수 동안 반전을 무시(직전 상태 유지)해
+  #   정책이 잠금 아래에서 학습한다. = ceil(pulse_s × control_hz) — tests/test_release_supervisor.py가 묶는다.
+  gripper_edge_lockout_steps: 6
+  # ★F68(2026-08-18) 폐합은 '시점 탈취'가 아니라 '높이 제약'이다★
+  #   [문제] student가 접근 내내 닫은 채 간다(close_bias 0.802 vs teacher 0.134 = 6배).
+  #     닫힌 그리퍼는 내경 34mm이고 큐브는 50mm라 감쌀 수 없어 밀어낸다 — 근접은 teacher보다
+  #     잘하면서(reach 0.734 vs 0.477) 실제 파지는 22%(전환율 0.19 vs 5.16 = 27배 열위).
+  #   ⚠️★F67 오진 정정★: 근거였던 "한번 닫으면 유지되므로 되돌릴 수 없다"는 ★사실이 아니다★.
+  #     binary_joint_actions.py:131-142는 매 스텝 `actions < 0`으로 명령을 재계산하며 latch가 없다.
+  #     그 전제로 폐합 ★시점★까지 수퍼바이저가 정하게 했더니 teacher 학습이 F66의 20%로
+  #     망가졌다(grasp 0-250 구간 0.031 vs F66 0.797). 시점은 정책에 돌려주고 높이만 제약한다.
+  #   ⚠️이 값은 open→close ★전이★에만 걸린다(delayed_actions.py의 may_close). 이미 닫혀 있으면
+  #     높이와 무관하게 유지된다 — 상태 지정으로 쓰면 들어올리는 도중 강제 개방이 일어난다
+  #     (임계를 0.080까지 올려도 배포등급이 0.00%였던 실측이 이것이다).
+  grasp_z_max_m: 0.040    # 폐합 허용 TCP 높이 상한 [m] — 실측 쓸기(0.020/0.040/0.060/0.080)에서 latch가 F66 수준으로 회복되는 최소값
+
+action:
+  # sim/real 공통 정책 의미: base-frame TCP 위치 delta 3 + axis-angle delta 3 + gripper 1.
+  # sim은 DifferentialIK, real은 ActionMapper→servoL이 같은 scale을 사용한다.
+  mode: ik_rel
+  num_arm_joints: 6
+  action_scale_rad: 0.5   # legacy joint_absolute 호환 전용; 현 ik_rel 경로에서는 미사용
+  # ★★Teacher v2(2026-09-18) 실행 제한 정합★★ 0.2 → 0.0125 / 0.2 → 0.025.
+  #   배포 SafetyGuard는 스텝당 TCP 변위를 tcp_linear_vel_max(0.25 m/s)·dt(0.05 s) = 12.5 mm,
+  #   회전을 0.5 rad/s·0.05 s = 25 mrad로 자른다(configs/safety.yaml). 구 0.2 m 스케일은
+  #   정책 출력 ±1이 실기에서 항상 잘리는 범위라, 학습 거동과 실기 거동이 구조적으로 달랐다.
+  #   스케일 = 허용 상한으로 두면 ★출력 ±1이 곧 실기 허용 범위★가 되고, sim 액션텀도 같은
+  #   상한으로 clamp한다(delayed_actions tcp_step_max_m). 에피소드는 10 s로 늘렸다(binpick_env_cfg).
+  task_pos_scale_m: 0.0125
+  task_rot_scale_rad: 0.025
+  # ★★F78(2026-08-31) 수직 파지 제약★★ — axis-angle 델타의 x·y(기울임)를 0으로 고정.
+  #   [왜] 큐브는 작업면에 놓여 상면 법선이 월드 +z다. 그 면에 수직으로 내려가야 두 손가락이
+  #     마주보는 면을 문다. 회전 3자유도를 열어 두면 정책이 기울어진 자세로 접근해 모서리를
+  #     긁거나 한쪽 손가락만 닿는 파지를 학습한다.
+  #   [yaw는 남긴다] 5cm 큐브 대각선 70.7mm vs 그리퍼 개구 74mm(여유 3mm) — yaw가 없으면
+  #     45° 돌아간 큐브를 물리적으로 못 집는다.
+  #   ⚠️ sim(delayed_actions.vertical_grasp_only)과 ★반드시 같은 값★. 한쪽만 켜면 정책이
+  #     학습한 자세와 실기 거동이 조용히 갈라진다(§4-3 sim=real 제1원칙).
+  vertical_grasp_only: true
+  gripper_close_threshold: 0.0   # ★action[-1] < threshold → close★ (2026-07-09 부호 정정 —
+                                 #   Isaac Lab BinaryJointPositionAction 관례: actions<0=close.
+                                 #   binary_joint_actions.py L124-129 검증. 이전 '>0=close'는 sim과 반대)
+  # action_dim = num_arm_joints + 1(그리퍼) = 7
+  # home offset = robot_spec.UR5E_HOME_JOINT_POS 단일 소스(config_io 주입 — 여기 중복 저장 안 함)
+
+preprocess:
+  # 요소1: 공유 전처리 파라미터 — common/obs_preprocess.py만 이 값을 소비한다.
+  # 경로(depth): 결측(<=0/NaN/inf)→far 대체 → clip(near,far) → 정사각 center-crop
+  #       → resize(nearest) → [0,1] 정규화
+  # 경로(rgb): /255 → clamp[0,1] → 같은 center-crop → resize(bilinear+antialias)
+  # ★2026-07-17 RGB-D 전환(B안 — 사용자 결정)★ + FOV 정합 계약 개정:
+  #   RGB 추가로 real은 ★rs.align(depth→color) 필수★(hand_eye v7 캘리브가 color
+  #   optical 기준이라 원래 계약이었음 — RGB 도입으로 완성). align 후 depth·rgb
+  #   둘 다 ★color intrinsics★ 프레임 → sim 카메라도 color 세로 FOV(42.5°,
+  #   sim.yaml vertical_fov_deg)로 렌더. real 848x480 color 프레임의 정사각
+  #   center-crop(480²)=세로 42.5° 전체 = sim 정사각 렌더와 등가(같은 코드 경로).
+  #   (구 58°는 depth 스트림 단독 FOV — depth-only 시대 계약. ⚠️ Phase3에서
+  #    실측 color intrinsics로 vfov 보정 검토 — D435i 공칭 42.5°±3°.)
+  # ★2026-07-14 eye-in-hand 전환(사용자 확정)★: 카메라 = 손목(플랜지) 장착 D435i.
+  #   near = D435i 최소 유효거리(848×480 기준 ~0.28m) — ★clamp가 아니라 무효화★:
+  #   near 미만 → far 대체(real의 depth=0 무효와 동일 규칙, obs_preprocess 참조).
+  #   파지 최종 구간의 depth 결손이 sim/real 동일하게 발생하는 것이 의도된 동작.
+  # ★Student v2(2026-09-18, F89) 0.28 → 0.20★ — Codex 루프 depth_near 계보(commit 663c812)의 근거를
+  #   본 계약으로 채택한다: 0.28은 D435i 1280×720의 Min-Z이고 실기 스트림은 848×480(Min-Z ≈ 0.17 m).
+  #   파지 단계 raw depth 실측에서 픽셀 67%가 0.28 m 미만인데 그중 58.5%p가 0.20~0.28 m라, 0.28은
+  #   파지 순간 큐브·작업면을 통째로 결측 처리해 student가 '쥐었는가'를 볼 수 없게 했다(grasp 단계
+  #   depth 무효 70%). 0.20은 실기 Min-Z에 3 cm 여유. 구 계약(0.28) checkpoint·번들과 비호환(cfg_hash).
+  depth_near_m: 0.20
+  # far: 손목 카메라 기준 작업영역 상한(홈 높이에서 벨트 ~0.5m, 캐리 중 최대 ~0.9m).
+  depth_far_m: 1.20
+  # ★2026-07-19 112² 상향(② 카드 h1)★ — sim.yaml camera.width/height와 반드시 동기.
+  #   64² 정체(~15%) 병목 후보(큐브 3~5px) 해소 + b1(ResNet18 백본) 선행 계약.
+  out_height: 112
+  out_width: 112
+  # 유효 FOV 크롭: square 모드 전용 메커니즘(고정 카메라 재도입 대비 보존).
+  crop_fraction: 1.0
+  # ★2026-07-18 프레임 기하 = full (RGB-D 증류 1차 실패의 근본수정)★:
+  #   42.5° 정사각에서 홈 자세 큐브 시야 내 비율 18.3%(기하 프로브: 스폰 분포
+  #   ±(0.20,0.275) × 홈 카메라 FK 투영) → 에피소드 82%가 큐브 불가시 시작 →
+  #   student 접근 불능(eval grasp 0.8%, min거리 med 13.9cm). full = rs.align된
+  #   848×480 '전체' 프레임을 현행 112×112로 비등방 리사이즈 — D435i color 가로 69.4°를
+  #   그대로 활용(시야 48.6%, 구 58° 정사각 33.6%보다도 넓음). 픽셀 종횡비 왜곡은
+  #   sim(비등방 aperture 렌더)/real(전체 리사이즈)이 동일해 계약 성립.
+  #   근거 문헌: DextrAH-RGB 320×240 와이드·QT-Opt 광각(협각 eye-in-hand 선례 없음).
+  frame_mode: full
+  # ★RGB-D 계약 스위치★: true = flat에 rgb(H*W*3, [0,1], C-H-W) 블록이 depth
+  #   다음에 추가(현행 112² obs_dim: depth-only 12574 → RGB-D 50206). false = depth-only(ablation 전용 — 계약이
+  #   달라 obs_spec/export/배포가 전부 갈린다. 산출물에 채널 구성 필수 명기).
+  use_rgb: true
+
+proprio:
+  # 정규화 스케일 (obs_preprocess.preprocess_proprio 전용)
+  joint_pos_scale: 3.141592653589793   # q / pi
+  joint_vel_scale: 3.141592653589793   # qd / pi  (UR5e 관절 최대속도와 별개 — 안전 한계는 safety.yaml)
+  tcp_pos_scale: 1.0                   # TCP/목표 위치 [m] / 1.0 (작업공간 ~1m)
+
+target:
+  # place 목표 — 에피소드마다 가변(사용자 결정 2026-07-04).
+  # sim: 리셋 이벤트가 아래 범위에서 균일 샘플 → actor 관측에 포함
+  # real: 현재는 Deploy_DryRun.py만 --target-pos를 받는다. Deploy_Real.py는 hard-block 상태다.
+  # ★★2026-07-28 GUI 확정 — 타겟존 확대(사용자 결정: "저장한 후보군·스케일 변경 반영")★★
+  #   place_workspace_gui.py에서 초록 타겟존 고스트를 직접 스케일한 값을 base frame으로 역산.
+  #   구: x[0.35,0.55]·y[±0.20] (폭 0.20×0.40) → 신: x[0.2714,0.6286]·y[±0.2926] (폭 0.357×0.585).
+  #   ⚠️★관측 계약 변경★ — target_pos는 정책 관측 슬롯이라 분포가 바뀐다 = teacher부터 재학습.
+  #   검증(적용 전 계산): 벨트 안(큐브 반변 여유 포함 x⊂[0.215,0.685]·y⊂±0.310) ✓ /
+  #     safety.yaml workspace AABB(x[0.20,0.70]·y[±0.45]) 내부 ✓ /
+  #     최원 타겟 반경 0.693m < 도달 한계(상완0.425+전완0.392=0.817) ✓ /
+  #     새 홈에서 타겟존 가시율 100% ✓
+  # ★★2026-07-28(2차) 배치 180° 반영 — 벨트가 base frame −x로 이동★★
+  #   z축 180° 회전 (x,y)→(−x,−y). y 범위는 원점대칭이라 불변, x만 부호·순서가 뒤집힌다.
+  #   ★회전은 거리를 보존하므로 보상 std(reach 0.35 / goal 0.55) 재보정은 불필요★.
+  #   검증(적용 전 계산): safety.yaml workspace x[−0.70,−0.20]·y[±0.45] 내부 ✓ /
+  #     최원 타겟 반경 0.693 m < 도달 한계 0.817 ✓ / 벨트(중심 −0.45, x±0.25) 내부 ✓ /
+  #     신 홈(shoulder_pan 180°) FK 파지중심 (−0.3012,−0.1328,0.525) — FK 실측 오차 0.0mm ✓
+  # ★★2026-08-10 ur5e_workcell_drawing.html 반영★★ 실작업영역 0.50×0.50(중심 x −0.46)에서
+  #   큐브 반변 2.5cm를 뺀 0.45×0.45. z = 작업면(−0.0375) + 큐브 반변(0.025) = −0.0125.
+  #   ⚠️구 값(y ±0.2926)은 실작업영역 ±0.25를 넘어 ★타겟이 작업면 밖에 샘플링되고 있었다★.
+  sample_range:
+    # ★2026-08-11 도면 정합★ 벨트 중심이 −0.46 → −0.50으로 이동해 픽존도 40mm 따라 이동한다.
+    #   픽존 = 450×600 @중심(−0.50, 0) ⇒ x[−0.725,−0.275] · y[±0.300].
+    #   ⚠️★관측 계약 변경★ — target_pos는 정책 관측 슬롯이다(teacher부터 재학습 대상).
+    #   도달 검산: 최원 모서리 √(0.725²+0.300²)=★0.7846★ < 도달한계 0.817 ✓ (여유 32mm)
+    # ★★2026-08-30 카메라 FOV 정합★★ — 새 홈에서 구 범위의 가시율은 67.8%였다.
+    #   sim.yaml pick_zone_m 축소와 ★같은 구역★으로 맞춘다 → 가시율 100.0%.
+    #   최원 모서리 도달 0.639m < 한계 0.817m. 구값: x[-0.7250,-0.2750] y[±0.3000].
+    #   ⚠️★관측 계약 변경★ — target_pos는 정책 관측 슬롯이라 teacher부터 재학습 대상이다.
+    x: [-0.6000, -0.4000] # base frame [m] — 스폰존과 동일 구역(카메라 시야 안)
+    y: [-0.2200, 0.2200]  # ★가시율 제약★ — 새 홈 카메라 FOV 안에 완전히 들어오는 범위
+    # ★2026-07-10 Full Pick&Place 전환(사용자 결정)★: 공중 hover(0.30) → ★벨트 표면 안착점★.
+    #   z=−0.0125 = 현행 5cm 큐브 안착 중심높이(작업면 −0.0375 + 반변 0.025). 이전 hover 목표는
+    #   "밀기 hacking" 회피용 shortcut이었으나(내려놓기는 배포 스크립트), 이제 진짜파지 게이트
+    #   (_grasped_mask, 양손접촉 검증)가 작동하므로 ever_lifted 래치로 밀기를 차단하고
+    #   Place(표면 안착+릴리스)까지 학습한다(binpick_env_cfg.py placed_released 참조).
+    #   ⚠️ 큐브 크기 변경 시 z를 OBJECT_SIZE/2로 함께 조정할 것.
+    # ★2026-07-28(3차) 벨트 1cm 하강 반영★: 안착점 = 벨트 상면(table_height_m −0.01) + 큐브 반변(0.015).
+    #   ⚠️★이 값은 sim.yaml table_height_m과 ★반드시 함께★ 움직인다★ — 2026-07-16 사고 재발 방지:
+    #     당시 벨트만 −0.086 내리고 이 값을 0.015로 두어 타겟이 벨트 위 8.6cm 공중에 떠 placed가 영구 0.
+    #   (MIN_LIFT·낙하종료·스폰 z는 TABLE_HEIGHT 상대식이라 자동 추종 — 절대값은 이 항과 safety z뿐)
+    z: [-0.0125, -0.0125]   # 작업면(−0.0375) + 큐브 반변(0.025) = 5cm 큐브 안착 중심
+
+# 관측 flat 레이아웃(순서 고정 — obs_spec.json에 기록되고 배포 시 검증됨):
+#   [ depth(out_h*out_w), rgb(out_h*out_w*3 — use_rgb 시), joint_pos(6),
+#     joint_vel(6), gripper_command_state(1; 0=open, 1=close), tcp_pose(7),
+#     target_pos(3), last_action(7) ]
+#   → obs_dim = 12544+37632+30 = ★50206★ (112² RGB-D 기준 — 2026-07-19 h1 계약;
+#     구 64² 계약은 16414, depth-only 64²는 4126 — 해상도별 계보 혼용 금지)

@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "artifact_type": "experimental_teacher_policy",
+  "policy_kind": "teacher_state",
+  "release": false,
+  "adopted": false,
+  "sim_adopted": true,
+  "not_for_release_reason": "modular deployment v2: Teacher trained on deployable 34D observations (command-state gripper, perception-estimated cube position with error/dropout DR, held latch) driven by the depth cube locator on the real robot. Sim-adopted, but no real-robot parity/latency evidence and no calibrated hand-eye/TCP approval yet. Lab/HIL use only under an explicit motion authorization.",
+  "created_at": "2026-09-21T10:39:57.616043+00:00",
+  "checkpoint": {
+    "path": "logs/rsl_rl/ur5e_binpick_teacher/2026-09-20_22-22-51-931877/model_24200.pt",
+    "sha256": "177c7eefed0fe3e1d4d7d7418ac0e61dcbce8a03acd41a33eb631f3156882276",
+    "training_run_root": "logs/rsl_rl/ur5e_binpick_teacher/2026-09-20_22-22-51-931877",
+    "training_receipt_sha256": "b56fecbf9d8bb5e449c1d197011d41b8439ce29dbceba006fd57a0bcde711fe4",
+    "iteration": 24200
+  },
+  "teacher_adoption": {
+    "path": "Phase1/Result/2026-09-20_22-22-51-931877/top5_evaluation/adoption.json",
+    "sha256": "db399dff665002152fdf4b532d29a81c4f212a31c4fab2308846a35bf85b0f1c",
+    "status": "adopted",
+    "selected_checkpoint": "model_24200.pt",
+    "this_checkpoint_passed": true,
+    "placed_per_seed": {
+      "42": 512,
+      "43": 512,
+      "44": 512,
+      "45": 512
+    },
+    "pooled_placed": 1.0,
+    "pooled_placed_wilson_lower_95": 0.9981277993949386,
+    "protocol": {
+      "candidate_count": 5,
+      "episodes_per_seed": 512,
+      "metrics": [
+        "grasp",
+        "carry",
+        "placed"
+      ],
+      "min_successes_per_seed": 487,
+      "min_wilson_lower": 0.95,
+      "pooled_episodes": 2048,
+      "require_finite": true,
+      "require_stage_invariants": true,
+      "require_zero_target_infeasible": false,
+      "seeds": [
+        42,
+        43,
+        44,
+        45
+      ],
+      "wilson_confidence": 0.95,
+      "winner_order": [
+        "min_seed_placed",
+        "min_seed_carry",
+        "min_seed_grasp",
+        "pooled_placed",
+        "pooled_carry",
+        "pooled_grasp",
+        "higher_Episode_Termination/placed_success_trailing_200_median",
+        "higher_iteration"
+      ]
+    }
+  },
+  "git": {
+    "training_commit": "803335659d266b131375c6e4f871cd5706eacd98",
+    "export_commit": "803335659d266b131375c6e4f871cd5706eacd98",
+    "commits_match": true
+  },
+  "contract": {
+    "obs_dim": 34,
+    "action_dim": 7,
+    "action_scheme": "ik_rel",
+    "vertical_grasp_only": true
+  },
+  "architecture": {
+    "actor_hidden_dims": [
+      256,
+      128,
+      64
+    ],
+    "activation": "elu"
+  },
+  "teacher_obs_cfg": {
+    "object_size_m": 0.05,
+    "table_height_m": -0.0375,
+    "z_band_m": [
+      0.025,
+      0.15
+    ],
+    "footprint_min_frac": 0.35,
+    "footprint_max_frac": 1.6,
+    "snap_z_on_table": true,
+    "held_radius_m": 0.045,
+    "held_offset_from_tcp_m": [
+      0.0,
+      0.0,
+      -0.027
+    ],
+    "max_missed_frames_before_hold": 40,
+    "max_jump_m": 0.1,
+    "jump_confirm_frames": 2,
+    "vertical_grasp_only": true,
+    "gripper_closed_threshold": 0.5
+  },
+  "perception": {
+    "module": "deployment/cube_detector.py + common/teacher_obs.py",
+    "requires": [
+      "RGB-D frames aligned to colour intrinsics",
+      "configs/calib/hand_eye.yaml",
+      "configs/calib/tcp_offset.yaml"
+    ]
+  },
+  "torchscript_equivalence": {
+    "random_probe_max_abs_error": 0.0,
+    "recorded_teacher_samples": {
+      "files": 0,
+      "samples": 0,
+      "max_abs_error": null
+    }
+  },
+  "files": {
+    "policy.pt": "d7e3b2d12dcd9c2747a9700e0cc57ff6d7bbf4c67f239904de4b1933ba4e3d69",
+    "obs_spec.json": "4afa26907edb43a31ab65645e3324376a597ce1a63914a7343440e5e3e041cc4"
+  },
+  "configs_copied": [
+    "configs/common.yaml",
+    "configs/safety.yaml",
+    "configs/sim.yaml",
+    "configs/dr.yaml",
+    "configs/real.example.yaml",
+    "configs/calib/hand_eye.yaml",
+    "configs/calib/nurec_landmarks.yaml",
+    "configs/calib/scene_layout.yaml",
+    "configs/calib/scene_registration.yaml",
+    "configs/calib/tcp_offset.yaml",
+    "configs/calib/tool_chain.yaml"
+  ]
+}
