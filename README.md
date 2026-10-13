@@ -122,8 +122,7 @@ Vision Student는 `Phase4\Run_Task.py --policy-dir exported_experimental\student
 CI와 같은 구성입니다. Python 3.11 가상환경에서 실행합니다.
 
 ```bash
-python -m pip install torch==2.7.0 --index-url https://download.pytorch.org/whl/cpu
-python -m pip install numpy==1.26.0 pyyaml==6.0.3 pytest==9.1.1 gymnasium==1.2.1 toml==0.10.2 pandas==3.0.3 matplotlib==3.10.3 psutil==5.9.8 openpyxl==3.1.5 tensorboard==2.21.0 opencv-python-headless==4.11.0.86
+python -m pip install -r requirements/test.txt
 python -m pip install --no-deps ./source/ur5e_binpick
 python scripts/validate_repository.py
 python -m pytest tests/
