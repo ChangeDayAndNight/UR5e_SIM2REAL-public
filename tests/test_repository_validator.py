@@ -36,7 +36,8 @@ def test_current_repository_static_contract_is_clean():
         )
 
     assert report.counts["yaml"] == 14 + _shipped_extra({".yaml", ".yml"})
-    assert report.counts["json"] == 25 + _shipped_extra({".json"})
+    # 25 → 10: 쓰이지 않던 calibration/captures{,_merged,_new,_orbit,_rot} JSON 15개 삭제.
+    assert report.counts["json"] == 10 + _shipped_extra({".json"})
     assert report.counts["toml"] == 2
     assert report.counts["urdf"] == 4
     # ★F97★ 배포 저장소의 문서 세트: README.md + DEPLOY_GUIDE.md + PROJECT_LOG.md + 번들별 DEPLOY_README.md
